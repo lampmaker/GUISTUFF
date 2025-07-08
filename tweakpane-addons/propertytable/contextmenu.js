@@ -1,103 +1,190 @@
 import { Pane } from './tweakpane-4.0.4.js';
 
+/**
+ * Context Menu and Popup utilities for Tweakpane property tables
+ * 
+ * Features:
+ * - Dynamic popup creation with positioning
+ * - Context menus for different binding types
+ * - Constraint controls for numbers and vectors
+ * - Type detection and validation
+ */
 
-//=========================================================================================================================================
-// Function to create a popup pane with Tweakpane
-// This function creates a popup with a Tweakpane instance inside it.
-
-
-
-export function createPopupPane({ title = null, positionElement = null, width = 300, height = 20, onClose, fill, x, y }) {
-    // Create popup container
-    const popup = document.createElement('div');
-    // add title
-    if (title) {
-        const titleElem = document.createElement('div');
-        titleElem.textContent = title;
-        Object.assign(titleElem.style, {
+// Constants for popup styling and configuration
+const POPUP_CONSTANTS = {
+    DEFAULTS: {
+        WIDTH: 300,
+        HEIGHT: 20,
+        MARGIN_TOP: 20,
+        POSITION_OFFSET: { x: 5, y: 4 },
+        Z_INDEX: 9999
+    },
+    STYLES: {
+        POPUP: {
+            position: 'fixed',
+            background: '#bbb',
+            borderRadius: '8px',
+            boxShadow: '0 4px 24px #0008',
+            padding: '2px'
+        },
+        TITLE: {
             position: 'absolute', left: '8px', top: '4px', background: 'none', border: 'none',
-            color: '#000', fontSize: '12px', opacity: 0.6, fontFamily: 'Segoe UI, Arial, sans-serif', fontWeight: 'bold'
-        });
-        popup.appendChild(titleElem);
-    }
+            color: '#000', fontSize: '12px', opacity: 0.6, 
+            fontFamily: 'Segoe UI, Arial, sans-serif', fontWeight: 'bold'
+        },
+        CLOSE_BUTTON: {
+            position: 'absolute', right: '8px', top: '1px', background: 'none', border: 'none',
+            color: '#000', fontSize: '20px', cursor: 'pointer', opacity: 0.5
+        }
+    },
+    CONSTRAINTS: {
+        DEFAULT_MIN: 0,
+        DEFAULT_MAX: 100,
+        DEFAULT_STEP: 0.1
+    },
+    VECTOR_COMPONENTS: {
+        vec2: ['x', 'y'],
+        vec3: ['x', 'y', 'z'],
+        vec4: ['x', 'y', 'z', 'w']
+    },
+    SUPPORTED_TYPES: ['number', 'vec2', 'vec3', 'vec4', 'string']
+};
 
-    // Compute popup position and size-----------------------------------------------------------------------------------
-    let computedStyle = {
-        position: 'fixed',
-        zIndex: 9999,
-        background: '#bbb',
-        borderRadius: '8px',
-        boxShadow: '0 4px 24px #0008',
-        padding: '2px',
-        minWidth: width + 'px',
-        minHeight: height + 'px'
+/**
+ * Creates a popup pane with Tweakpane instance
+ * @param {Object} options - Configuration options
+ * @param {string} options.title - Optional popup title
+ * @param {HTMLElement} options.positionElement - Element to position popup relative to
+ * @param {number} options.width - Popup width
+ * @param {number} options.height - Popup height
+ * @param {Function} options.onClose - Callback when popup closes
+ * @param {Function} options.fill - Callback to populate pane content
+ * @param {number} options.x - Manual x position
+ * @param {number} options.y - Manual y position
+ * @returns {Pane} Tweakpane instance with _popup property
+ */
+export function createPopupPane({ 
+    title = null, 
+    positionElement = null, 
+    width = POPUP_CONSTANTS.DEFAULTS.WIDTH, 
+    height = POPUP_CONSTANTS.DEFAULTS.HEIGHT, 
+    onClose, 
+    fill, 
+    x, 
+    y 
+}) {
+    const popup = _createPopupContainer();
+    
+    if (title) {
+        _addTitle(popup, title);
+    }
+    
+    _addCloseButton(popup, onClose);
+    _positionPopup(popup, positionElement, x, y, width, height);
+    
+    const paneContainer = _createPaneContainer(popup);
+    const pane = _createTweakpane(paneContainer, fill);
+    
+    _setupOutsideClickHandler(popup, onClose);
+    
+    pane._popup = popup;
+    return pane;
+}
+
+// Helper functions for createPopupPane
+function _createPopupContainer() {
+    const popup = document.createElement('div');
+    Object.assign(popup.style, {
+        ...POPUP_CONSTANTS.STYLES.POPUP,
+        zIndex: POPUP_CONSTANTS.DEFAULTS.Z_INDEX
+    });
+    return popup;
+}
+
+function _addTitle(popup, title) {
+    const titleElem = document.createElement('div');
+    titleElem.textContent = title;
+    Object.assign(titleElem.style, POPUP_CONSTANTS.STYLES.TITLE);
+    popup.appendChild(titleElem);
+}
+
+function _addCloseButton(popup, onClose) {
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    Object.assign(closeBtn.style, POPUP_CONSTANTS.STYLES.CLOSE_BUTTON);
+    
+    closeBtn.onmouseenter = () => closeBtn.style.opacity = '1';
+    closeBtn.onmouseleave = () => closeBtn.style.opacity = '0.5';
+    closeBtn.onclick = () => {
+        popup.remove();
+        onClose?.();
+    };
+    popup.appendChild(closeBtn);
+}
+
+function _positionPopup(popup, positionElement, x, y, width, height) {
+    const { DEFAULTS } = POPUP_CONSTANTS;
+    let positionStyle = {
+        minWidth: `${width}px`,
+        minHeight: `${height}px`
     };
 
     if (positionElement) {
         const rect = positionElement.getBoundingClientRect();
-        x = rect.left;
-        y = rect.bottom;
-        Object.assign(computedStyle, {
-            left: rect.left + 5 + 'px',
-            top: (rect.bottom + 4) + 'px',
-            width: rect.width + 'px',
-            minWidth: rect.width + 'px',
-            maxWidth: rect.width + 'px',
+        Object.assign(positionStyle, {
+            left: `${rect.left + DEFAULTS.POSITION_OFFSET.x}px`,
+            top: `${rect.bottom + DEFAULTS.POSITION_OFFSET.y}px`,
+            width: `${rect.width}px`,
+            minWidth: `${rect.width}px`,
+            maxWidth: `${rect.width}px`,
             transform: 'none'
         });
     } else if (x != null && y != null) {
-        Object.assign(computedStyle, {
-            left: x + 'px',
-            top: y + 'px',
+        Object.assign(positionStyle, {
+            left: `${x}px`,
+            top: `${y}px`,
             transform: 'none'
         });
     } else {
-        Object.assign(computedStyle, {
+        Object.assign(positionStyle, {
             left: '50%',
             top: '50%',
-            transform: 'translate(-50%,-50%)'
+            transform: 'translate(-50%, -50%)'
         });
     }
 
-    Object.assign(popup.style, computedStyle);
+    Object.assign(popup.style, positionStyle);
+}
 
-
-    // Optional close button ----------------------------------------------------------------------------------------------------
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '×';
-    Object.assign(closeBtn.style, {
-        position: 'absolute', right: '8px', top: '1px', background: 'none', border: 'none',
-        color: '#000', fontSize: '20px', cursor: 'pointer', opacity: 0.5
-    });
-    closeBtn.onmouseenter = () => closeBtn.style.opacity = 1;
-    closeBtn.onmouseleave = () => closeBtn.style.opacity = 0.5;
-    closeBtn.onclick = () => { popup.remove(); if (onClose) onClose(); };
-    popup.appendChild(closeBtn);
-
-    // Container for tweakpane ------------------------------------------------------------------------------------
+function _createPaneContainer(popup) {
     const paneDiv = document.createElement('div');
-    paneDiv.style.marginTop = '20px'; // Add space for the close button
+    paneDiv.style.marginTop = `${POPUP_CONSTANTS.DEFAULTS.MARGIN_TOP}px`;
     popup.appendChild(paneDiv);
     document.body.appendChild(popup);
+    return paneDiv;
+}
 
-    // Close popup when clicking outside------------------------------------------------------------------------------------
+function _createTweakpane(container, fill) {
+    const pane = new Pane({ container });
+    if (typeof fill === 'function') {
+        fill(pane);
+    }
+    return pane;
+}
+
+function _setupOutsideClickHandler(popup, onClose) {
     const closeOnOutsideClick = (e) => {
         if (!popup.contains(e.target)) {
             popup.remove();
             document.removeEventListener('click', closeOnOutsideClick);
-            if (onClose) onClose();
+            onClose?.();
         }
     };
-    // Add the listener on the next frame to avoid immediate closure    -
+    
+    // Add listener on next frame to avoid immediate closure
     setTimeout(() => {
         document.addEventListener('click', closeOnOutsideClick);
     }, 0);
-
-    // Create tweakpane instance    ----------------------------------------------------------------------------------
-    const pane = new Pane({ container: paneDiv });
-    if (typeof fill === 'function') fill(pane);
-    pane._popup = popup;
-    return pane;
 }
 
 
@@ -108,24 +195,32 @@ export function createPopupPane({ title = null, positionElement = null, width = 
 
 
 
-
-//=========================================================================================================================================
-// returns the type of binding based on the value of the property: 
-// 'boolean', 'string', 'number', 'vec2', 'vec3', 'vec4' or 'unknown'
+/**
+ * Detects the binding type based on the property value
+ * @param {Object} target - The target object
+ * @param {string} property - The property name
+ * @returns {string} The detected type: 'boolean', 'string', 'number', 'vec2', 'vec3', 'vec4', 'color', or 'unknown'
+ */
 export function detectBindingType(target, property) {
     const value = target[property];
 
-    // detect color strings
-    if (typeof value === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value)) return 'color'; // hex color
+    // Early returns for primitive types
     if (typeof value === 'boolean') return 'boolean';
-    if (typeof value === 'string') return 'string';
     if (typeof value === 'number') return 'number';
+    
+    if (typeof value === 'string') {
+        // Detect hex color strings
+        return /^#[0-9A-Fa-f]{6}$/.test(value) ? 'color' : 'string';
+    }
 
+    // Object type detection for vectors
     if (value && typeof value === 'object') {
         const keys = Object.keys(value);
-        if (keys.includes('x') && keys.includes('y') && keys.includes('z') && keys.includes('w')) return 'vec4';
-        if (keys.includes('x') && keys.includes('y') && keys.includes('z')) return 'vec3';
-        if (keys.includes('x') && keys.includes('y')) return 'vec2';
+        const hasKeys = (requiredKeys) => requiredKeys.every(key => keys.includes(key));
+        
+        if (hasKeys(['x', 'y', 'z', 'w'])) return 'vec4';
+        if (hasKeys(['x', 'y', 'z'])) return 'vec3';
+        if (hasKeys(['x', 'y'])) return 'vec2';
     }
 
     return 'unknown';
@@ -135,123 +230,192 @@ export function detectBindingType(target, property) {
 
 
 
+// Global state for context menu management
+let activeContextMenu = null;
 
-
-//=========================================================================================================================================
-// Function to add a context menu to a binding
-// This function creates a context menu for a binding that allows the user to modify constraints on the property.
-// It supports boolean, string, number, vec2, vec3, and vec4 types
-let activeContextmenu = null;
+/**
+ * Adds a context menu to a binding for constraint editing
+ * @param {Object} binding - The Tweakpane binding
+ * @param {Object} target - The target object
+ * @param {string} property - The property name
+ * @param {Object} options - Binding options
+ */
 export function addContextMenu(binding, target, property, options) {
-    // only for specific types of bindings
-    let type = detectBindingType(target, property);
-    if (!['number', 'vec2', 'vec3', 'vec4','string'].includes(type)) {
+    const type = detectBindingType(target, property);
+    
+    // Only add context menu for supported types
+    if (!POPUP_CONSTANTS.SUPPORTED_TYPES.includes(type)) {
         return;
     }
-    if (type=="string" && !options.multiline) return;
-    const sliderContainer = binding.element.querySelector('.tp-sldtxtv_s');
+    
+    // Skip string types that aren't multiline
+    if (type === "string" && !options.multiline) {
+        return;
+    }
+    
+    _initializeSliderVisibility(binding, options);
+    _attachContextMenuListener(binding, target, property, options, type);
+}
+
+// Helper functions for addContextMenu
+function _initializeSliderVisibility(binding, options) {
+    const sliderContainer = binding.element?.querySelector('.tp-sldtxtv_s');
     if (sliderContainer) {
         sliderContainer.style.display = options.showSlider ? '' : 'none';
     }
+}
+
+function _attachContextMenuListener(binding, target, property, options, type) {
     binding.element.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        if (activeContextmenu) {
-            activeContextmenu.remove();
-        }
+        
+        _closeActiveContextMenu();
+        
         const pane = createPopupPane({
             positionElement: binding.element,
             title: `Property: ${property}`,
-            fill: (pane) => {
-                // // find the binding type 
+            fill: (pane) => _populateContextMenu(pane, binding, target, property, options, type)
+        });
+        
+        activeContextMenu = pane._popup;
+    });
+}
 
+function _closeActiveContextMenu() {
+    activeContextMenu?.remove();
+    activeContextMenu = null;
+}
 
-                // Helper function to create constraint controls
-                const createConstraintControl = (components, getValues, applyValues) => {
-                    pane.addBlade({ readonly: true, view: 'text', label: '', parse: _ => { }, value: '  min  ,  max  ,  step' });
+function _populateContextMenu(pane, binding, target, property, options, type) {
+    switch (type) {
+        case 'boolean':
+        case 'string':
+            _addStringControls(pane, binding, options);
+            break;
+        case 'number':
+            _addNumberControls(pane, binding, options);
+            break;
+        case 'vec2':
+        case 'vec3':
+        case 'vec4':
+            _addVectorControls(pane, binding, options, type);
+            break;
+        default:
+            console.warn(`Unknown type for property ${property}: ${type}`);
+            break;
+    }
+    
+    _addCommonControls(pane, binding, target, property, options);
+}
 
-                    components.forEach(comp => {
-                        const values = getValues(comp);
-                        const vals = { range: { x: values.min, y: values.max, z: values.step } };
+function _addStringControls(pane, binding, options) {
+    if (options.multiline) {
+        pane.addBinding(options, "wordwrap", { label: 'Word Wrap' })
+            .on('change', () => binding.update());
+    }
+}
 
-                        pane.addBinding(vals, "range", { label: comp || '' }).on('change', () => {
-                            applyValues(comp, vals.range.x, vals.range.y, vals.range.z);
-                        });
-                    });
-                };
-                // add context menu for different types of properties====================================================================
-                switch (type) {
-                    case 'boolean':
-                    case 'string':
-                        if (options.multiline) {
-                            pane.addBinding(options,"wordwrap", { label: 'Word Wrap' }).on('change', () => {
-                                
-                               binding.update() 
-                            })
-                        }
-                        break;
+function _addNumberControls(pane, binding, options) {
+    const { DEFAULT_MIN, DEFAULT_MAX, DEFAULT_STEP } = POPUP_CONSTANTS.CONSTRAINTS;
+    
+    _createConstraintControl(
+        pane,
+        [''],
+        () => ({ 
+            min: options.min ?? DEFAULT_MIN, 
+            max: options.max ?? DEFAULT_MAX, 
+            step: options.step ?? DEFAULT_STEP 
+        }),
+        (_, min, max, step) => {
+            Object.assign(options, { min, max, step });
+            _updateBindingConstraints(binding, { min, max, step });
+        }
+    );
+    
+    _addSliderToggle(pane, binding, options);
+}
 
-                    case 'number':
-                        createConstraintControl([''],
-                            () => ({ min: options.min || 0, max: options.max || 100, step: options.step || 0.1 }),
-                            (_, min, max, step) => {
-                                options.min = min; options.max = max; options.step = step;
-                                if (binding.min !== undefined) binding.min = min;
-                                if (binding.max !== undefined) binding.max = max;
-                                if (binding.step !== undefined) binding.step = step;
-                            }
-                        );
-                        // Add slider visibility toggle
-                        const sliderVisible = { showSlider: options.showSlider !== false };
+function _addVectorControls(pane, binding, options, type) {
+    const components = POPUP_CONSTANTS.VECTOR_COMPONENTS[type];
+    const { DEFAULT_MIN, DEFAULT_MAX, DEFAULT_STEP } = POPUP_CONSTANTS.CONSTRAINTS;
+    
+    _createConstraintControl(
+        pane,
+        components,
+        (comp) => {
+            options[comp] = options[comp] || {};
+            return { 
+                min: options[comp].min ?? DEFAULT_MIN,
+                max: options[comp].max ?? DEFAULT_MAX,
+                step: options[comp].step ?? DEFAULT_STEP
+            };
+        },
+        (comp, min, max, step) => {
+            Object.assign(options[comp], { min, max, step });
+            if (binding[comp]) {
+                _updateBindingConstraints(binding[comp], { min, max, step });
+            }
+        }
+    );
+}
 
-                        pane.addBinding(sliderVisible, 'showSlider', { label: 'Show Slider' }).on('change', () => {
-                            options.showSlider = sliderVisible.showSlider;
-                            const sliderContainer = binding.element.querySelector('.tp-sldtxtv_s');
-                            if (sliderContainer) {
-                                sliderContainer.style.display = sliderVisible.showSlider ? '' : 'none';
-                            }
-                        });
-                        break;
+function _createConstraintControl(pane, components, getValues, applyValues) {
+    // Add header for constraint controls
+    pane.addBlade({ 
+        readonly: true, 
+        view: 'text', 
+        label: '', 
+        parse: () => {}, 
+        value: '  min  ,  max  ,  step' 
+    });
 
-                    case 'vec2':
-                    case 'vec3':
-                    case 'vec4':
-                        const components = type === 'vec2' ? ['x', 'y'] : type === 'vec3' ? ['x', 'y', 'z'] : ['x', 'y', 'z', 'w'];
-                        createConstraintControl(components,
-                            (comp) => {
-                                options[comp] = options[comp] || {};
-                                return { min: options[comp].min || 0, max: options[comp].max || 100, step: options[comp].step || 0.1 };
-                            },
-                            (comp, min, max, step) => {
-                                options[comp].min = min; options[comp].max = max; options[comp].step = step;
-                                if (binding[comp]) {
-                                    if (binding[comp].min !== undefined) binding[comp].min = min;
-                                    if (binding[comp].max !== undefined) binding[comp].max = max;
-                                    if (binding[comp].step !== undefined) binding[comp].step = step;
-                                }
-                            }
-                        );
-                        break;
+    components.forEach(comp => {
+        const values = getValues(comp);
+        const constraintData = { range: { x: values.min, y: values.max, z: values.step } };
 
-                    default:
-                        console.warn(`Unknown type for property ${property}: ${type}`);
-                        break;
-                }
-                pane.addButton({ title: 'Close', }).on('click', () => {
-                    binding.refresh()
-                    pane._popup.remove();
-                })
-                //===========================================================================================================================
-                if (options?.removable) { // add the remove button if the property is removable
-                    pane.addButton({ title: 'Remove', label: "Remove this item" }).on('click', () => {
-                        delete target[property];
-                        binding.dispose();
-                        pane._popup.remove();
-                    });
-                }
+        pane.addBinding(constraintData, "range", { label: comp || '' })
+            .on('change', () => {
+                const { x: min, y: max, z: step } = constraintData.range;
+                applyValues(comp, min, max, step);
+            });
+    });
+}
+
+function _addSliderToggle(pane, binding, options) {
+    const sliderVisible = { showSlider: options.showSlider !== false };
+
+    pane.addBinding(sliderVisible, 'showSlider', { label: 'Show Slider' })
+        .on('change', () => {
+            options.showSlider = sliderVisible.showSlider;
+            const sliderContainer = binding.element?.querySelector('.tp-sldtxtv_s');
+            if (sliderContainer) {
+                sliderContainer.style.display = sliderVisible.showSlider ? '' : 'none';
             }
         });
-        activeContextmenu = pane._popup;
+}
+
+function _updateBindingConstraints(binding, { min, max, step }) {
+    if (binding.min !== undefined) binding.min = min;
+    if (binding.max !== undefined) binding.max = max;
+    if (binding.step !== undefined) binding.step = step;
+}
+
+function _addCommonControls(pane, binding, target, property, options) {
+    // Close button
+    pane.addButton({ title: 'Close' }).on('click', () => {
+        binding.refresh();
+        activeContextMenu?.remove();
     });
+    
+    // Remove button (if removable)
+    if (options?.removable) {
+        pane.addButton({ title: 'Remove', label: "Remove this item" })
+            .on('click', () => {
+                delete target[property];
+                binding.dispose();
+                activeContextMenu?.remove();
+            });
+    }
 }
 
