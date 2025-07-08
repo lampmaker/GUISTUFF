@@ -112,7 +112,7 @@ export function createPopupPane({ title = null, positionElement = null, width = 
 //=========================================================================================================================================
 // returns the type of binding based on the value of the property: 
 // 'boolean', 'string', 'number', 'vec2', 'vec3', 'vec4' or 'unknown'
-function detectBindingType(target, property) {
+export function detectBindingType(target, property) {
     const value = target[property];
 
     // detect color strings
@@ -194,7 +194,7 @@ export function addContextMenu(binding, target, property, options) {
                                 if (binding.step !== undefined) binding.step = step;
                             }
                         );
-                                                // Add slider visibility toggle
+                        // Add slider visibility toggle
                         const sliderVisible = { showSlider: options.showSlider !== false };
 
                         pane.addBinding(sliderVisible, 'showSlider', { label: 'Show Slider' }).on('change', () => {

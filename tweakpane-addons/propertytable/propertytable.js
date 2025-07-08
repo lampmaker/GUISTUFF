@@ -1,5 +1,5 @@
 import { Pane } from './tweakpane-4.0.4.js';
-import { createPopupPane, addContextMenu } from './contextmenu.js';
+import { createPopupPane, addContextMenu, detectBindingType } from './contextmenu.js';
 
 
 // make an extension of the Tweakpane Pane class
@@ -19,24 +19,65 @@ class propertyTable extends Pane {
         }
     }
 
+    //========================================================================================================================================  
+    // This method prepares the binding options before they are added to the pane
+    bindingPrepper(target, property, options) {
+        let type = detectBindingType(target, property);
+        switch (type) {
+            case "number":      // force slider control. 
+                options.showSlider = true;
+                let val = target[property];
+                if (!options.min && !options.max) {
+                    options.min = Math.min(val, options.min || 0);
+                    options.max = Math.max(val, options.max || 100);
+                    options.showSlider = false; // default to showing the slider
+                }
+                break;
+            case "string":
+                if (options.multiline) options.readonly = true; // force to switch log control (which uses textarea)  for multiline strings
+                break;
+            default:
+                break;
+        }
+        return { target, property, options }
+    }
+
+    //========================================================================================================================================  
+    // modfies controls after they are added to the pane
+    bindingModifier(binding, target, property, options) {
+        let type = detectBindingType(target, property);
+        switch (type) {
+            case "string":      // force slider control. 
+                if (options.multiline) {
+                    setTimeout(() => {
+                        const element = binding.element;
+                        const label = element.querySelector('.tp-lblv_l'); // Label element
+                        const container = element.querySelector('.tp-lblv_v'); // Value container
+                        if (label) label.style.display = 'none';
+                        if (container) { container.style.width = '100%'; container.style.marginLeft = '0'; }
+                        const textarea = element.querySelector('textarea');
+                        textarea.readOnly = false;                  // make it editable                        textarea.addEventListener('input', (e) => target[property] = e.target.value);
+                        textarea.style.cursor = 'text';
+                        textarea.style.backgroundColor = 'var(--in-bg)';
+
+                    }, 0)
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+
     //========================================================================================================================================    
     // // Override the addBinding method to customize how properties are added to the pane
     // This method allows you to add custom logic for handling property tables
     addBinding(target, property, options,) {
-        //when adding a single Number, add min/max values and hthe slider visibility toggle.  set the min/max value so teh current value is within the range
-        let value = target[property];
-        if (typeof value === 'number') {
-            options.showSlider = true;
-            if (!isNaN(value) && !options.min && !options.max) {
-                options.min = options.min || 0;
-                options.max = options.max || 100;
-                options.showSlider = false; // default to showing the slider
-            }
-        }
 
-
+        ({ target, property, options } = this.bindingPrepper(target, property, options))
         const binding = super.addBinding(target, property, options);
         addContextMenu(binding, target, property, options);
+        this.bindingModifier(binding, target, property, options);
         return binding;
     }
 
@@ -50,19 +91,10 @@ class propertyTable extends Pane {
         //----------------------override addBinding to add context menu
         const fbind = folder.addBinding;
         folder.addBinding = (target, property, options) => {
-            //when adding a single Number, add min/max values and hthe slider visibility toggle.  set the min/max value so teh current value is within the range
-            let value = target[property];
-            if (typeof value === 'number') {
-                options.showSlider = true;
-                if (!isNaN(value) && !options.min && !options.max) {
-                    options.min = options.min || 0;
-                    options.max = options.max || 100;
-                    options.showSlider = false; // default to showing the slider
-                }
-            }
-
+            ({ target, property, options } = this.bindingPrepper(target, property, options))
             const binding = fbind.call(folder, target, property, options);
             addContextMenu(binding, target, property, options);
+            this.bindingModifier(binding, target, property, options);
             return binding;
         }
 
