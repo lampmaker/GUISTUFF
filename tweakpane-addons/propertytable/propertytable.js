@@ -4,28 +4,28 @@ import { createPopupPane } from './contextmenu.js';
 //=========================================================================================================================================
 function detectBindingType(target, property) {
     const value = target[property];
-    
+
     if (typeof value === 'boolean') return 'boolean';
     if (typeof value === 'string') return 'string';
     if (typeof value === 'number') return 'number';
-    
+
     if (value && typeof value === 'object') {
         const keys = Object.keys(value);
         if (keys.includes('x') && keys.includes('y') && keys.includes('z') && keys.includes('w')) return 'vec4';
         if (keys.includes('x') && keys.includes('y') && keys.includes('z')) return 'vec3';
         if (keys.includes('x') && keys.includes('y')) return 'vec2';
     }
-    
+
     return 'unknown';
 }
 
 // make an extension of the Tweakpane Pane class
 class propertyTable extends Pane {
 
-    
+
     constructor(options) {
         super(options);
-        this.activeContextmenu=null;
+        this.activeContextmenu = null;
     }
     //========================================================================================================================================
     // This method binds multiple properties of an object to the pane
@@ -46,23 +46,48 @@ class propertyTable extends Pane {
             e.stopPropagation();
             if (this.activeContextmenu) {
                 this.activeContextmenu.remove();
-            }   
+            }
             const pane = createPopupPane({
                 positionElement: binding.element,
                 title: `Property: ${property}`,
                 fill: (pane) => {
                     // // find the binding type 
                     let type = detectBindingType(target, property);
-                    console.log(`Detected type for ${property}: ${type}`);                   
-                    pane.addBinding(target, property, options);
-                    console.log(binding.controller.view.constructor.name); // e.g., "NumberTextController", "BooleanController", etc.
-                    if (options?.removable){
-                    pane.addButton({ title: 'Remove' }).on('click', () => {
-                        delete target[property];
-                        binding.dispose();
-                        pane._popup.remove();
-                    });
-                }
+                    
+                    switch (type) {
+                        case 'boolean':                            break;
+                        case 'string':                           break;
+                        case 'number':
+                            // add min, max, step options for number type
+                            options.min= options.min || 0;
+                            options.max = options.max || 100;
+                            options.step = options.step || .1;
+                            pane.addBinding(options, 'min');
+                            pane.addBinding(options, 'max');
+                            pane.addBinding(options, 'step');
+
+                            break;
+                        case 'vec2':
+                            break;
+                        case 'vec3':
+                            break;
+                        case 'vec4':
+                            break;
+                        default:
+                            console.warn(`Unknown type for property ${property}: ${type}`);
+                            break;
+                    }
+                    pane.addButton({ title: 'Apply Changes', }).on('click', () => {
+                        binding.refresh()
+                    })
+
+                    if (options?.removable) { // add the remove button if the property is removable
+                        pane.addButton({ title: 'Remove', label:"Remove this item" }).on('click', () => {
+                            delete target[property];
+                            binding.dispose();
+                            pane._popup.remove();
+                        });
+                    }
                 }
             });
             this.activeContextmenu = pane._popup;
@@ -164,7 +189,7 @@ class propertyTable extends Pane {
                 folder.children.slice().forEach(child => child.dispose());
                 for (let key in folder.bindings.objects) {
                     let b = folder.addBinding(folder.bindings.objects, key, folder.bindings.options?.[key] || {});
-                    this.addContextMenu(b, folder.bindings.objects, key, folder.bindings.options?.[key] || {}   );
+                    this.addContextMenu(b, folder.bindings.objects, key, folder.bindings.options?.[key] || {});
                 }
                 origRefresh();
             };
