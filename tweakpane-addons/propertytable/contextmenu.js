@@ -21,7 +21,7 @@ export function createPopupPane({ title = null, positionElement = null, width = 
         popup.appendChild(titleElem);
     }
 
-    // Compute popup position and size
+    // Compute popup position and size-----------------------------------------------------------------------------------
     let computedStyle = {
         position: 'fixed',
         zIndex: 9999,
@@ -62,7 +62,7 @@ export function createPopupPane({ title = null, positionElement = null, width = 
     Object.assign(popup.style, computedStyle);
 
 
-    // Optional close button
+    // Optional close button ----------------------------------------------------------------------------------------------------
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '×';
     Object.assign(closeBtn.style, {
@@ -74,14 +74,26 @@ export function createPopupPane({ title = null, positionElement = null, width = 
     closeBtn.onclick = () => { popup.remove(); if (onClose) onClose(); };
     popup.appendChild(closeBtn);
 
-    // Container for tweakpane
+    // Container for tweakpane ------------------------------------------------------------------------------------
     const paneDiv = document.createElement('div');
     paneDiv.style.marginTop = '20px'; // Add space for the close button
     popup.appendChild(paneDiv);
-
     document.body.appendChild(popup);
 
-    // Create tweakpane instance
+    // Close popup when clicking outside------------------------------------------------------------------------------------
+    const closeOnOutsideClick = (e) => {
+        if (!popup.contains(e.target)) {
+            popup.remove();
+            document.removeEventListener('click', closeOnOutsideClick);
+            if (onClose) onClose();
+        }
+    };
+    // Add the listener on the next frame to avoid immediate closure    -
+    setTimeout(() => {
+        document.addEventListener('click', closeOnOutsideClick);
+    }, 0);
+
+    // Create tweakpane instance    ----------------------------------------------------------------------------------
     const pane = new Pane({ container: paneDiv });
     if (typeof fill === 'function') fill(pane);
     pane._popup = popup;

@@ -2,14 +2,30 @@ import { Pane } from './tweakpane-4.0.4.js';
 import { createPopupPane } from './contextmenu.js';
 
 //=========================================================================================================================================
-
+function detectBindingType(target, property) {
+    const value = target[property];
+    
+    if (typeof value === 'boolean') return 'boolean';
+    if (typeof value === 'string') return 'string';
+    if (typeof value === 'number') return 'number';
+    
+    if (value && typeof value === 'object') {
+        const keys = Object.keys(value);
+        if (keys.includes('x') && keys.includes('y') && keys.includes('z') && keys.includes('w')) return 'vec4';
+        if (keys.includes('x') && keys.includes('y') && keys.includes('z')) return 'vec3';
+        if (keys.includes('x') && keys.includes('y')) return 'vec2';
+    }
+    
+    return 'unknown';
+}
 
 // make an extension of the Tweakpane Pane class
 class propertyTable extends Pane {
 
+    
     constructor(options) {
         super(options);
-
+        this.activeContextmenu=null;
     }
     //========================================================================================================================================
     // This method binds multiple properties of an object to the pane
@@ -28,18 +44,28 @@ class propertyTable extends Pane {
         binding.element.addEventListener('contextmenu', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (this.activeContextmenu) {
+                this.activeContextmenu.remove();
+            }   
             const pane = createPopupPane({
                 positionElement: binding.element,
                 title: `Property: ${property}`,
                 fill: (pane) => {
+                    // // find the binding type 
+                    let type = detectBindingType(target, property);
+                    console.log(`Detected type for ${property}: ${type}`);                   
                     pane.addBinding(target, property, options);
+                    console.log(binding.controller.view.constructor.name); // e.g., "NumberTextController", "BooleanController", etc.
+                    if (options?.removable){
                     pane.addButton({ title: 'Remove' }).on('click', () => {
                         delete target[property];
                         binding.dispose();
                         pane._popup.remove();
                     });
                 }
+                }
             });
+            this.activeContextmenu = pane._popup;
         });
     }
 
@@ -92,6 +118,7 @@ class propertyTable extends Pane {
                 pane.addBinding(params, 'value', { label: "Value" });
                 pane.addButton({ title: 'Apply' }).on('click', () => {
                     folder.bindings.objects[params.name] = params.value;
+                    folder.bindings.options[params.name] = { type: params.type, removable: true };
                     currentPopup.remove();
                     folder.refresh();
                 });
