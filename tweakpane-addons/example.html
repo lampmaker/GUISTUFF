@@ -31,6 +31,7 @@
 
             let Q = {
                 float: 1.23,
+                float2: 3,
                 vec2: { x: 0.1, y: 0.2 },
                 vec3: { x: 0.1, y: 0.2, z: 0.3 },
                 vec4: { x: 0.1, y: 0.2, z: 0.3, w: 0.4 },
@@ -42,6 +43,7 @@
 
             let options = {
                 float: { min: 0, max: 10, step: 0.01 },
+
                 vec2: { x: { min: -10, max: 10, step: 0.01 }, y: { min: -10, max: 10, step: 0.01 } },
                 vec3: { x: { min: -10, max: 10, step: 0.01 }, y: { min: -10, max: 10, step: 0.01 }, z: { min: -10, max: 10, step: 0.01 } },
                 vec4: { x: { min: -10, max: 10, step: 0.01 }, y: { min: -10, max: 10, step: 0.01 }, z: { min: -10, max: 10, step: 0.01 }, w: { min: 0, max: 1, step: 0.01 } },
@@ -50,23 +52,16 @@
             }
 
 
+            let fold = MENU1.addFolder({
+                title: "folder",
+                expandable: true,
+                object: Q,
+                options: options
+            })
 
-            let bindControls = (objects, options) => {
-                for (let key in objects) {
-                    MENU1.addBinding(objects, key, options[key] || {});
-                }
-            }
-
-            bindControls(Q, options);
-
-            MENU1.addButton({
-                title: 'Increment',
-                label: 'counter',
-                onClick: () => {
-                    Q.float += 1;
-                }
-            });
-
+            //fold.bindControls(Q, options);
+            MENU1.addButton({ title: 'show data', }).on('click', () => { console.log(Q); });
+            fold.refresh();
 
 
             //=====================================================================================================================
