@@ -1,23 +1,6 @@
 import { Pane } from './tweakpane-4.0.4.js';
-import { createPopupPane } from './contextmenu.js';
+import { createPopupPane, addContextMenu } from './contextmenu.js';
 
-//=========================================================================================================================================
-function detectBindingType(target, property) {
-    const value = target[property];
-
-    if (typeof value === 'boolean') return 'boolean';
-    if (typeof value === 'string') return 'string';
-    if (typeof value === 'number') return 'number';
-
-    if (value && typeof value === 'object') {
-        const keys = Object.keys(value);
-        if (keys.includes('x') && keys.includes('y') && keys.includes('z') && keys.includes('w')) return 'vec4';
-        if (keys.includes('x') && keys.includes('y') && keys.includes('z')) return 'vec3';
-        if (keys.includes('x') && keys.includes('y')) return 'vec2';
-    }
-
-    return 'unknown';
-}
 
 // make an extension of the Tweakpane Pane class
 class propertyTable extends Pane {
@@ -25,7 +8,7 @@ class propertyTable extends Pane {
 
     constructor(options) {
         super(options);
-        this.activeContextmenu = null;
+
     }
     //========================================================================================================================================
     // This method binds multiple properties of an object to the pane
@@ -36,109 +19,15 @@ class propertyTable extends Pane {
         }
     }
 
-
-    //========================================================================================================================================
-
-
-
-
-    addContextMenu(binding, target, property, options) {
-        binding.element.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            if (this.activeContextmenu) {
-                this.activeContextmenu.remove();
-            }
-            const pane = createPopupPane({
-                positionElement: binding.element,
-                title: `Property: ${property}`,
-                fill: (pane) => {
-                    // // find the binding type 
-                    let type = detectBindingType(target, property);
-
-                    // Helper function to create constraint controls
-                    const createConstraintControl = (components, getValues, applyValues) => {
-                        pane.addBlade({ readonly: true, view: 'text', label: '', parse: _ => { }, value: '  min  ,  max  ,  step' });
-
-                        components.forEach(comp => {
-                            const values = getValues(comp);
-                            const vals = { range: { x: values.min, y: values.max, z: values.step } };
-
-                            pane.addBinding(vals, "range", { label: comp || '' }).on('change', () => {
-                                applyValues(comp, vals.range.x, vals.range.y, vals.range.z);
-                            });
-                        });
-                    };
-                    // add context menu for different types of properties====================================================================
-                    switch (type) {
-                        case 'boolean':
-                        case 'string':
-                            break;
-
-                        case 'number':
-                            createConstraintControl([''],
-                                () => ({ min: options.min || 0, max: options.max || 100, step: options.step || 0.1 }),
-                                (_, min, max, step) => {
-                                    options.min = min; options.max = max; options.step = step;
-                                    if (binding.min !== undefined) binding.min = min;
-                                    if (binding.max !== undefined) binding.max = max;
-                                    if (binding.step !== undefined) binding.step = step;
-                                }
-                            );
-                            break;
-
-                        case 'vec2':
-                        case 'vec3':
-                        case 'vec4':
-                            const components = type === 'vec2' ? ['x', 'y'] : type === 'vec3' ? ['x', 'y', 'z'] : ['x', 'y', 'z', 'w'];
-                            createConstraintControl(components,
-                                (comp) => {
-                                    options[comp] = options[comp] || {};
-                                    return { min: options[comp].min || 0, max: options[comp].max || 100, step: options[comp].step || 0.1 };
-                                },
-                                (comp, min, max, step) => {
-                                    options[comp].min = min; options[comp].max = max; options[comp].step = step;
-                                    if (binding[comp]) {
-                                        if (binding[comp].min !== undefined) binding[comp].min = min;
-                                        if (binding[comp].max !== undefined) binding[comp].max = max;
-                                        if (binding[comp].step !== undefined) binding[comp].step = step;
-                                    }
-                                }
-                            );
-                            break;
-
-                        default:
-                            console.warn(`Unknown type for property ${property}: ${type}`);
-                            break;
-                    }
-                    pane.addButton({ title: 'Close', }).on('click', () => {
-                        binding.refresh()
-                        pane._popup.remove();
-                    })
-                    //===========================================================================================================================
-                    if (options?.removable) { // add the remove button if the property is removable
-                        pane.addButton({ title: 'Remove', label: "Remove this item" }).on('click', () => {
-                            delete target[property];
-                            binding.dispose();
-                            pane._popup.remove();
-                        });
-                    }
-                }
-            });
-            this.activeContextmenu = pane._popup;
-        });
-    }
-
-
-
-
-    //========================================================================================================================================    // Override the addBinding method to customize how properties are added to the pane
+    //========================================================================================================================================    
+    // // Override the addBinding method to customize how properties are added to the pane
     // This method allows you to add custom logic for handling property tables
     addBinding(target, property, options,) {
         const binding = super.addBinding(target, property, options);
-        this.addContextMenu(binding, target, property, options);
+        addContextMenu(binding, target, property, options);
         return binding;
     }
+
 
 
     //========================================================================================================================================
@@ -146,6 +35,13 @@ class propertyTable extends Pane {
     addFolder(params) {
         const folder = super.addFolder(params);
 
+        //----------------------override addBinding to add context menu
+        const fbind = folder.addBinding;
+        folder.addBinding = (target, property, options) => {
+            const binding = fbind.call(folder, target, property, options);
+            addContextMenu(binding, target, property, options);
+            return binding;
+        }
 
         // Attach bindControls to the folder
         folder.bindControls = (objects, options, onclick = _ => { }) => {
@@ -155,7 +51,7 @@ class propertyTable extends Pane {
             }
             for (let key in objects) {
                 let b = folder.addBinding(objects, key, options?.[key] || {}).on('click', onclick);
-                this.addContextMenu(b, objects, key, options);
+                addContextMenu(b, objects, key, options);
             }
         };
 
@@ -223,8 +119,7 @@ class propertyTable extends Pane {
                 // clear existing controls
                 folder.children.slice().forEach(child => child.dispose());
                 for (let key in folder.bindings.objects) {
-                    let b = folder.addBinding(folder.bindings.objects, key, folder.bindings.options?.[key] || {});
-                    this.addContextMenu(b, folder.bindings.objects, key, folder.bindings.options?.[key] || {});
+                    folder.addBinding(folder.bindings.objects, key, folder.bindings.options?.[key] || {});                 
                 }
                 origRefresh();
             };
