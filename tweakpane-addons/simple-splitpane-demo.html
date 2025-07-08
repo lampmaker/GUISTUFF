@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple SplitPane Demo</title>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="./splitpane/splitpane.css">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2d2d2d;
+            padding: 10px 20px;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+
+        .btn:hover { background: #005a9e; }
+        
+        .content { height: calc(100vh - 50px); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Simple SplitPane Demo</h1>
+        <div>
+            <button class="btn" onclick="toggleOrientation()">Toggle</button>
+            <button class="btn" onclick="reset()">Reset</button>
+        </div>
+    </div>
+    
+    <div class="content" id="container"></div>
+
+    <script type="module">
+        import { SplitPane } from './splitpane/splitpane.js';
+        import { TreeView } from './treeview/treeview.js';
+        import { PropertyTable } from './propertytable/propertytable.js';
+
+        let split, nestedSplit;
+        let isHorizontal = true;
+
+        // Sample data
+        const treeData = [
+            { label: 'Project', children: [
+                { label: 'src', children: [
+                    { label: 'main.js' },
+                    { label: 'utils.js' }
+                ]},
+                { label: 'assets', children: [
+                    { label: 'logo.png' },
+                    { label: 'style.css' }
+                ]},
+                { label: 'package.json' }
+            ]}
+        ];
+
+        const props = {
+            name: "Demo Object",
+            x: 1.5, y: 2.3, z: 0.8,
+            color: '#ff5722',
+            enabled: true
+        };
+
+        function init() {
+            const container = document.getElementById('container');
+            
+            // Main split
+            split = new SplitPane(container, { 
+                orientation: 'horizontal', 
+                splitRatio: 0.25, 
+                minSize: 2150 
+            });
+
+            // Left panel - TreeView
+            const leftWrapper = createPanelWrapper('Explorer');
+            split.getPanel(1).appendChild(leftWrapper);
+            
+            new TreeView({
+                container: leftWrapper.querySelector('.scrollable-content'),
+                data: treeData
+            });
+
+            // Right panel - nested split
+            nestedSplit = new SplitPane(split.getPanel(2), { 
+                orientation: 'vertical', 
+                splitRatio: 0.7, 
+                minSize: 300 
+            });
+
+            // Top right - Properties
+            const propWrapper = createPanelWrapper('Properties');
+            nestedSplit.getPanel(1).appendChild(propWrapper);
+            
+            const propTable = new PropertyTable({
+                container: propWrapper.querySelector('.scrollable-content'),
+                title: 'Object Properties',
+                expanded: true
+            });
+            propTable.bindControls(props);
+
+            // Bottom right - Info
+            const infoWrapper = createPanelWrapper('Information');
+            nestedSplit.getPanel(2).appendChild(infoWrapper);
+            
+            infoWrapper.querySelector('.scrollable-content').innerHTML = `
+                <div class="info-panel">
+                    <h3>Simple SplitPane</h3>
+                    <p>• Minimal code (~80 lines)</p>
+                    <p>• External CSS styling</p>
+                    <p>• Easy to understand</p>
+                    <p>• Drag the splitters!</p>
+                </div>
+            `;
+        }
+
+        function createPanelWrapper(title) {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'panel-wrapper';
+            wrapper.innerHTML = `
+                <div class="panel-header">${title}</div>
+                <div class="scrollable-content"></div>
+            `;
+            return wrapper;
+        }
+
+        window.toggleOrientation = () => {
+            isHorizontal = !isHorizontal;
+            split.setOrientation(isHorizontal);
+        };
+
+        window.reset = () => {
+            split.setSplit(0.25);
+            nestedSplit.setSplit(0.7);
+        };
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
