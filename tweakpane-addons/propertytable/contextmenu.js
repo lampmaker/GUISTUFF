@@ -144,10 +144,14 @@ function detectBindingType(target, property) {
 let activeContextmenu = null;
 export function addContextMenu(binding, target, property, options) {
     // only for specific types of bindings
-     let type = detectBindingType(target, property);
-    if (![ 'number', 'vec2', 'vec3', 'vec4'].includes(type)) {
+    let type = detectBindingType(target, property);
+    if (!['number', 'vec2', 'vec3', 'vec4'].includes(type)) {
         return;
-    }   
+    }
+    const sliderContainer = binding.element.querySelector('.tp-sldtxtv_s');
+    if (sliderContainer) {
+        sliderContainer.style.display = options.showSlider ? '' : 'none';
+    }
     binding.element.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -159,7 +163,7 @@ export function addContextMenu(binding, target, property, options) {
             title: `Property: ${property}`,
             fill: (pane) => {
                 // // find the binding type 
-               
+
 
                 // Helper function to create constraint controls
                 const createConstraintControl = (components, getValues, applyValues) => {
@@ -190,6 +194,16 @@ export function addContextMenu(binding, target, property, options) {
                                 if (binding.step !== undefined) binding.step = step;
                             }
                         );
+                                                // Add slider visibility toggle
+                        const sliderVisible = { showSlider: options.showSlider !== false };
+
+                        pane.addBinding(sliderVisible, 'showSlider', { label: 'Show Slider' }).on('change', () => {
+                            options.showSlider = sliderVisible.showSlider;
+                            const sliderContainer = binding.element.querySelector('.tp-sldtxtv_s');
+                            if (sliderContainer) {
+                                sliderContainer.style.display = sliderVisible.showSlider ? '' : 'none';
+                            }
+                        });
                         break;
 
                     case 'vec2':

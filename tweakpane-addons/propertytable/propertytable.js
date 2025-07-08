@@ -23,6 +23,18 @@ class propertyTable extends Pane {
     // // Override the addBinding method to customize how properties are added to the pane
     // This method allows you to add custom logic for handling property tables
     addBinding(target, property, options,) {
+        //when adding a single Number, add min/max values and hthe slider visibility toggle.  set the min/max value so teh current value is within the range
+        let value = target[property];
+        if (typeof value === 'number') {
+            options.showSlider = true;
+            if (!isNaN(value) && !options.min && !options.max) {
+                options.min = options.min || 0;
+                options.max = options.max || 100;
+                options.showSlider = false; // default to showing the slider
+            }
+        }
+
+
         const binding = super.addBinding(target, property, options);
         addContextMenu(binding, target, property, options);
         return binding;
@@ -38,6 +50,17 @@ class propertyTable extends Pane {
         //----------------------override addBinding to add context menu
         const fbind = folder.addBinding;
         folder.addBinding = (target, property, options) => {
+            //when adding a single Number, add min/max values and hthe slider visibility toggle.  set the min/max value so teh current value is within the range
+            let value = target[property];
+            if (typeof value === 'number') {
+                options.showSlider = true;
+                if (!isNaN(value) && !options.min && !options.max) {
+                    options.min = options.min || 0;
+                    options.max = options.max || 100;
+                    options.showSlider = false; // default to showing the slider
+                }
+            }
+
             const binding = fbind.call(folder, target, property, options);
             addContextMenu(binding, target, property, options);
             return binding;
@@ -119,7 +142,7 @@ class propertyTable extends Pane {
                 // clear existing controls
                 folder.children.slice().forEach(child => child.dispose());
                 for (let key in folder.bindings.objects) {
-                    folder.addBinding(folder.bindings.objects, key, folder.bindings.options?.[key] || {});                 
+                    folder.addBinding(folder.bindings.objects, key, folder.bindings.options?.[key] || {});
                 }
                 origRefresh();
             };
