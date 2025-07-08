@@ -1,55 +1,6 @@
 import { Pane } from './tweakpane-4.0.4.js';
 import { createPopupPane, addContextMenu, detectBindingType } from './contextmenu.js';
-
-
-
-
-export function setTextareaStyle(textarea, options={}) {
-    let wordwrap = options.wordwrap 
-    let highlighting = options.highlighting || null;
-
-    // Basic textarea styling
-    textarea.readOnly = false;
-    textarea.style.cursor = 'text';
-    textarea.style.backgroundColor = 'var(--in-bg)';
-    
-    // Word wrap settings
-    if (wordwrap) {
-        textarea.style.whiteSpace = 'pre-wrap'; // Preserves whitespace and line breaks but allows wrapping
-        textarea.style.wordWrap = 'break-word'; // Break long words
-        textarea.style.overflowWrap = 'break-word'; // Modern alternative
-    } else {
-        textarea.style.whiteSpace = 'pre'; // Preserves whitespace but no wrapping
-        textarea.style.wordWrap = 'normal';
-        textarea.style.overflowWrap = 'normal';
-        textarea.style.overflowX = 'auto'; // Allow horizontal scroll when no wrap
-    }
-    
-    // Font settings to match Tweakpane inputs
-    textarea.style.fontFamily = 'inherit';
-    textarea.style.fontSize = 'inherit';
-    textarea.style.fontWeight = 'inherit';
-    
-    // Optional syntax highlighting (placeholder for future implementation)
-    if (highlighting) {
-        textarea.setAttribute('data-highlighting', highlighting);
-        // Could add classes or additional styling based on highlighting type
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+import { setTextareaStyle } from './textarea-highlighting.js';
 
 
 
@@ -104,7 +55,7 @@ class propertyTable extends Pane {
         switch (type) {
             case "string":      // force slider control. 
                 if (options.multiline) {
-                    setTimeout(() => {
+                    setTimeout(() => {                              // modify the textarea control to use a textarea instead of an input
                         const element = binding.element;
                         const label = element.querySelector('.tp-lblv_l'); // Label element
                         const container = element.querySelector('.tp-lblv_v'); // Value container
@@ -128,7 +79,6 @@ class propertyTable extends Pane {
     // // Override the addBinding method to customize how properties are added to the pane
     // This method allows you to add custom logic for handling property tables
     addBinding(target, property, options,) {
-
         ({ target, property, options } = this.bindingPrepper(target, property, options))
         const binding = super.addBinding(target, property, options);
         addContextMenu(binding, target, property, options);
