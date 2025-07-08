@@ -50,7 +50,7 @@ export class SplitPane {
         if (SplitPane.cssInjected) return;
         
         const css = `
-/* SplitPane Core Styles */
+/* SplitPane Core CSS - Essential styles only */
 .splitpane-container {
     position: relative;
     width: 100%;
@@ -89,7 +89,7 @@ export class SplitPane {
     cursor: row-resize;
 }
 
-/* Demo Styles */
+/* Panel Structure - Used internally by SplitPane */
 .panel-wrapper {
     height: 100%;
     display: flex;
@@ -109,48 +109,6 @@ export class SplitPane {
 .scrollable-content {
     overflow: auto;
     flex: 1;
-}
-
-.property-table-container {
-    height: 100%;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.property-table-container .tp-pane {
-    flex: 1;
-    overflow: auto;
-    min-height: 0;
-}
-
-.treeview-container {
-    overflow: auto !important;
-    height: 100% !important;
-    padding: 8px !important;
-}
-
-.info-panel {
-    background-color: #2d2d2d;
-    border-radius: 4px;
-    padding: 15px;
-    margin: 10px 0;
-}
-
-.info-panel h3 {
-    color: #4fc3f7;
-    margin-bottom: 10px;
-}
-
-.info-panel p {
-    line-height: 1.5;
-    margin-bottom: 8px;
-}
-
-.nested-split {
-    border: 1px solid #404040;
-    border-radius: 4px;
-    overflow: hidden;
 }
         `;
         
@@ -196,6 +154,9 @@ export class SplitPane {
     }
     
     init() {
+
+
+
         // Create elements
         this.element = document.createElement('div');
         this.element.className = 'splitpane-container';
