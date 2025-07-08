@@ -40,6 +40,8 @@ class propertyTable extends Pane {
     //========================================================================================================================================
 
 
+
+
     addContextMenu(binding, target, property, options) {
         binding.element.addEventListener('contextmenu', (e) => {
             e.preventDefault();
@@ -53,21 +55,24 @@ class propertyTable extends Pane {
                 fill: (pane) => {
                     // // find the binding type 
                     let type = detectBindingType(target, property);
-                    
+                    let vals;
                     switch (type) {
-                        case 'boolean':                            break;
-                        case 'string':                           break;
+                        case 'boolean': break;
+                        case 'string': break;
                         case 'number':
-                            // add min, max, step options for number type
-                            options.min= options.min || 0;
-                            options.max = options.max || 100;
-                            options.step = options.step || .1;
-                            pane.addBinding(options, 'min');
-                            pane.addBinding(options, 'max');
-                            pane.addBinding(options, 'step');
-
+                            // add min, max, step options for number type                            
+                            pane.addBlade({ readonly: true, view: 'text', label: '', parse: _ => { }, value: '  min  ,  max  ,  step', })
+                             vals = { range: { x: options.min || 0, y: options.max || 100, z: options.step || 1 } }
+                            pane.addBinding(vals, "range").on('change', () => { binding.min = vals.range.x; binding.max = vals.range.y; binding.step = vals.range.z; });
                             break;
                         case 'vec2':
+                            pane.addBlade({ readonly: true, view: 'text', label: '', parse: _ => { }, value: '  min  ,  max  ,  step', })
+                             vals = { range: { x: options.x.min || 0, y: options.x.max || 100, z: options.x.step || 1 } }
+                            pane.addBinding(vals, "range",{label:"x"}).on('change', () => { binding.min = vals.range.x; binding.max = vals.range.y; binding.step = vals.range.z; });
+                            vals = { range: { x: options.y.min || 0, y: options.y.max || 100, z: options.y.step || 1 } }
+                            pane.addBinding(vals, "range",{label:"y"}).on('change', () => { binding.min = vals.range.x; binding.max = vals.range.y; binding.step = vals.range.z; });
+
+
                             break;
                         case 'vec3':
                             break;
@@ -77,12 +82,13 @@ class propertyTable extends Pane {
                             console.warn(`Unknown type for property ${property}: ${type}`);
                             break;
                     }
-                    pane.addButton({ title: 'Apply Changes', }).on('click', () => {
+                    pane.addButton({ title: 'Close', }).on('click', () => {
                         binding.refresh()
+                        pane._popup.remove();
                     })
 
                     if (options?.removable) { // add the remove button if the property is removable
-                        pane.addButton({ title: 'Remove', label:"Remove this item" }).on('click', () => {
+                        pane.addButton({ title: 'Remove', label: "Remove this item" }).on('click', () => {
                             delete target[property];
                             binding.dispose();
                             pane._popup.remove();
