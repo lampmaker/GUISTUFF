@@ -17,11 +17,6 @@
         return binding;
     }
 
-    addPane(target, property, options) {
-        const binding = super.addPane(target, property, options);
-        // Add custom logic for property table if needed
-        return binding;
-    }
 
  }
 
