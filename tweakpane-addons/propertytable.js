@@ -1,11 +1,43 @@
 import { Pane } from './tweakpane-4.0.4.js';
 
 
+//=========================================================================================================================================
+// Function to create a popup pane with Tweakpane
+// This function creates a popup with a Tweakpane instance inside it.
+function createPopupPane({ title = null, width = 300, height = 200, onClose, fill }) {
+    // Create popup container
+    const popup = document.createElement('div');
+    Object.assign(popup.style, {
+        position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+        zIndex: 9999, background: '#222', borderRadius: '8px', boxShadow: '0 4px 24px #0008',
+        padding: '8px', minWidth: width + 'px', minHeight: height + 'px'
+    });
 
+    // Optional close button
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    Object.assign(closeBtn.style, {
+        position: 'absolute', right: '8px', top: '4px', background: 'none', border: 'none',
+        color: '#fff', fontSize: '20px', cursor: 'pointer', opacity: 0.5
+    });
+    closeBtn.onmouseenter = () => closeBtn.style.opacity = 1;
+    closeBtn.onmouseleave = () => closeBtn.style.opacity = 0.5;
+    closeBtn.onclick = () => { popup.remove(); if (onClose) onClose(); };
+    popup.appendChild(closeBtn);
 
+    // Container for tweakpane
+    const paneDiv = document.createElement('div');
+    paneDiv.style.marginTop = '20px'; // Add space for the close button
+    popup.appendChild(paneDiv);
 
+    document.body.appendChild(popup);
 
-
+    // Create tweakpane instance
+    const pane = new propertyTable({ container: paneDiv, title });
+    if (typeof fill === 'function') fill(pane);
+    pane._popup = popup;
+    return pane;
+}
 
 
 // make an extension of the Tweakpane Pane class
@@ -23,6 +55,11 @@ class propertyTable extends Pane {
             this.addBinding(objects, key, options[key] || {});
         }
     }
+
+
+    //========================================================================================================================================
+
+
 
 
 
@@ -45,7 +82,7 @@ class propertyTable extends Pane {
 
         // Attach bindControls to the folder
         folder.bindControls = (objects, options) => {
-            folder.bindings={
+            folder.bindings = {
                 objects: objects,
                 options: options
             }
@@ -55,25 +92,35 @@ class propertyTable extends Pane {
         };
 
 
-        // expandable folder ====================================================================================================
+        // expandable folder section ====================================================================================================
+        //===============================================================================================================================
 
-        folder.addElement=_=>{
-            folder.bindings.objects["TEST"+Math.random(1).toFixed(2)]="Testje"
-            folder.refresh();
+        // this shows a popup that allows users to add a new property to the folder
+        folder._addElement = _ => {
+            let params = { name: "name", type: 1, value: 0. };
+            let currentPopup;
+            function showPopup() {
+                if (currentPopup) currentPopup.remove();
+                params.value = ["text here", 0.0, { x: 0, y: 0 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 0 }, false][params.type];
+                let pane = createPopupPane({ height:140});
+                currentPopup = pane._popup;
+                pane.addBinding(params, 'name',{label: "Name:"});
+                pane.addBinding(params, 'type', { label:"Type:",options: { string: 0, float: 1, vec2: 2, vec3: 3, vec4: 4, boolean: 5 } })
+                    .on('change', () => showPopup());
+                pane.addBinding(params, 'value',{label:"Value:"});
+                pane.addButton({ title: 'Apply' }).on('click', () => {
+                    folder.bindings.objects[params.name] = params.value;
+                    currentPopup.remove();
+                    folder.refresh();
+                });
+            }
+            showPopup();
         }
-
-        
-
-
-
-
-
-
-
-
+        //===============================================================================================================================
         if (params?.expandable && params?.object) {
             // If the folder is expandable and has an object, bind the controls to the object
             folder.bindControls(params.object, params.options || {});
+            // Add a button to add new properties to the folder
             setTimeout(() => {
                 const folderElem = folder.element;
                 const header = folderElem.querySelector('.tp-fldv_t');
@@ -91,36 +138,27 @@ class propertyTable extends Pane {
                     });
                     plusBtn.onmouseenter = () => plusBtn.style.opacity = '1';
                     plusBtn.onmouseleave = () => plusBtn.style.opacity = '0.5';
-                    plusBtn.onclick = e => { 
-                        e.stopPropagation(); 
-                        folder.addElement();
-                     };
+                    plusBtn.onclick = e => {
+                        e.stopPropagation();
+                        folder._addElement();
+                    };
                     header.appendChild(plusBtn);
                 }
             }, 0);
+
+
+
+            // add actions to the refresh event.  clear the folder and rebind the controls
+            const origRefresh = folder._refresh ? folder._refresh.bind(folder) : () => { };
+            folder.refresh = () => {
+                // clear existing controls
+                folder.children.slice().forEach(child => child.dispose());
+                for (let key in folder.bindings.objects) {
+                    folder.addBinding(folder.bindings.objects, key, folder.bindings.options?.[key] || {});
+                }
+                origRefresh();
+            };
         }
-
-
-
-
-        // add actions to the refresh event
-        const origRefresh = folder._refresh ? folder._refresh.bind(folder) : () => { };
-        folder.refresh = () => {
-            // clear existing controls
-            folder.children.slice().forEach(child => child.dispose());
-            
-
-            for (let key in folder.bindings.objects) {
-                folder.addBinding(folder.bindings.objects, key, folder.bindings.options?.[key] || {});
-            }
-
-
-            // Custom pre-refresh logic here
-            // console.log('Custom refresh logic before');
-            console.log('Refreshing folder:', folder.title);
-            origRefresh();
-
-        };
         return folder;
     }
 
