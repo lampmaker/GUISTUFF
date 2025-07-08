@@ -2,6 +2,58 @@ import { Pane } from './tweakpane-4.0.4.js';
 import { createPopupPane, addContextMenu, detectBindingType } from './contextmenu.js';
 
 
+
+
+export function setTextareaStyle(textarea, options={}) {
+    let wordwrap = options.wordwrap 
+    let highlighting = options.highlighting || null;
+
+    // Basic textarea styling
+    textarea.readOnly = false;
+    textarea.style.cursor = 'text';
+    textarea.style.backgroundColor = 'var(--in-bg)';
+    
+    // Word wrap settings
+    if (wordwrap) {
+        textarea.style.whiteSpace = 'pre-wrap'; // Preserves whitespace and line breaks but allows wrapping
+        textarea.style.wordWrap = 'break-word'; // Break long words
+        textarea.style.overflowWrap = 'break-word'; // Modern alternative
+    } else {
+        textarea.style.whiteSpace = 'pre'; // Preserves whitespace but no wrapping
+        textarea.style.wordWrap = 'normal';
+        textarea.style.overflowWrap = 'normal';
+        textarea.style.overflowX = 'auto'; // Allow horizontal scroll when no wrap
+    }
+    
+    // Font settings to match Tweakpane inputs
+    textarea.style.fontFamily = 'inherit';
+    textarea.style.fontSize = 'inherit';
+    textarea.style.fontWeight = 'inherit';
+    
+    // Optional syntax highlighting (placeholder for future implementation)
+    if (highlighting) {
+        textarea.setAttribute('data-highlighting', highlighting);
+        // Could add classes or additional styling based on highlighting type
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // make an extension of the Tweakpane Pane class
 class propertyTable extends Pane {
 
@@ -34,7 +86,10 @@ class propertyTable extends Pane {
                 }
                 break;
             case "string":
-                if (options.multiline) options.readonly = true; // force to switch log control (which uses textarea)  for multiline strings
+                if (options.multiline) {
+                    options.readonly = true; // force to switch log control (which uses textarea)  for multiline strings
+                    options.wordwrap=true;
+                }
                 break;
             default:
                 break;
@@ -56,9 +111,9 @@ class propertyTable extends Pane {
                         if (label) label.style.display = 'none';
                         if (container) { container.style.width = '100%'; container.style.marginLeft = '0'; }
                         const textarea = element.querySelector('textarea');
-                        textarea.readOnly = false;                  // make it editable                        textarea.addEventListener('input', (e) => target[property] = e.target.value);
-                        textarea.style.cursor = 'text';
-                        textarea.style.backgroundColor = 'var(--in-bg)';
+                        setTextareaStyle(textarea, options);
+                        textarea.addEventListener('input', (e) => target[property] = e.target.value);
+                        binding.update=_=>setTextareaStyle(textarea, options); // Update textarea style on binding update
 
                     }, 0)
                 }

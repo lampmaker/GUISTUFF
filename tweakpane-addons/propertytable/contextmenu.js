@@ -145,9 +145,10 @@ let activeContextmenu = null;
 export function addContextMenu(binding, target, property, options) {
     // only for specific types of bindings
     let type = detectBindingType(target, property);
-    if (!['number', 'vec2', 'vec3', 'vec4'].includes(type)) {
+    if (!['number', 'vec2', 'vec3', 'vec4','string'].includes(type)) {
         return;
     }
+    if (type=="string" && !options.multiline) return;
     const sliderContainer = binding.element.querySelector('.tp-sldtxtv_s');
     if (sliderContainer) {
         sliderContainer.style.display = options.showSlider ? '' : 'none';
@@ -182,6 +183,12 @@ export function addContextMenu(binding, target, property, options) {
                 switch (type) {
                     case 'boolean':
                     case 'string':
+                        if (options.multiline) {
+                            pane.addBinding(options,"wordwrap", { label: 'Word Wrap' }).on('change', () => {
+                                
+                               binding.update() 
+                            })
+                        }
                         break;
 
                     case 'number':
