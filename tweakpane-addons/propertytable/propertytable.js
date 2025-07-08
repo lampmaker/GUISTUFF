@@ -55,29 +55,58 @@ class propertyTable extends Pane {
                 fill: (pane) => {
                     // // find the binding type 
                     let type = detectBindingType(target, property);
-                    let vals;
+
+                    // Helper function to create constraint controls
+                    const createConstraintControl = (components, getValues, applyValues) => {
+                        pane.addBlade({ readonly: true, view: 'text', label: '', parse: _ => { }, value: '  min  ,  max  ,  step' });
+
+                        components.forEach(comp => {
+                            const values = getValues(comp);
+                            const vals = { range: { x: values.min, y: values.max, z: values.step } };
+
+                            pane.addBinding(vals, "range", { label: comp || '' }).on('change', () => {
+                                applyValues(comp, vals.range.x, vals.range.y, vals.range.z);
+                            });
+                        });
+                    };
+                    // add context menu for different types of properties====================================================================
                     switch (type) {
-                        case 'boolean': break;
-                        case 'string': break;
+                        case 'boolean':
+                        case 'string':
+                            break;
+
                         case 'number':
-                            // add min, max, step options for number type                            
-                            pane.addBlade({ readonly: true, view: 'text', label: '', parse: _ => { }, value: '  min  ,  max  ,  step', })
-                             vals = { range: { x: options.min || 0, y: options.max || 100, z: options.step || 1 } }
-                            pane.addBinding(vals, "range").on('change', () => { binding.min = vals.range.x; binding.max = vals.range.y; binding.step = vals.range.z; });
+                            createConstraintControl([''],
+                                () => ({ min: options.min || 0, max: options.max || 100, step: options.step || 0.1 }),
+                                (_, min, max, step) => {
+                                    options.min = min; options.max = max; options.step = step;
+                                    if (binding.min !== undefined) binding.min = min;
+                                    if (binding.max !== undefined) binding.max = max;
+                                    if (binding.step !== undefined) binding.step = step;
+                                }
+                            );
                             break;
+
                         case 'vec2':
-                            pane.addBlade({ readonly: true, view: 'text', label: '', parse: _ => { }, value: '  min  ,  max  ,  step', })
-                             vals = { range: { x: options.x.min || 0, y: options.x.max || 100, z: options.x.step || 1 } }
-                            pane.addBinding(vals, "range",{label:"x"}).on('change', () => { binding.min = vals.range.x; binding.max = vals.range.y; binding.step = vals.range.z; });
-                            vals = { range: { x: options.y.min || 0, y: options.y.max || 100, z: options.y.step || 1 } }
-                            pane.addBinding(vals, "range",{label:"y"}).on('change', () => { binding.min = vals.range.x; binding.max = vals.range.y; binding.step = vals.range.z; });
-
-
-                            break;
                         case 'vec3':
-                            break;
                         case 'vec4':
+                            const components = type === 'vec2' ? ['x', 'y'] : type === 'vec3' ? ['x', 'y', 'z'] : ['x', 'y', 'z', 'w'];
+                            createConstraintControl(components,
+                                (comp) => {
+                                    options[comp] = options[comp] || {};
+                                    return { min: options[comp].min || 0, max: options[comp].max || 100, step: options[comp].step || 0.1 };
+                                },
+                                (comp, min, max, step) => {
+                                    options[comp].min = min; options[comp].max = max; options[comp].step = step;
+                                    if (binding[comp]) {
+                                        if (binding[comp].min !== undefined) binding[comp].min = min;
+                                        if (binding[comp].max !== undefined) binding[comp].max = max;
+                                        if (binding[comp].step !== undefined) binding[comp].step = step;
+                                    }
+                                }
+                            );
                             break;
+
                         default:
                             console.warn(`Unknown type for property ${property}: ${type}`);
                             break;
@@ -86,7 +115,7 @@ class propertyTable extends Pane {
                         binding.refresh()
                         pane._popup.remove();
                     })
-
+                    //===========================================================================================================================
                     if (options?.removable) { // add the remove button if the property is removable
                         pane.addButton({ title: 'Remove', label: "Remove this item" }).on('click', () => {
                             delete target[property];
