@@ -1,6 +1,6 @@
 import { Pane } from './tweakpane-4.0.4.js';
 import { createPopupPane, addContextMenu, detectBindingType } from './contextmenu.js';
-import { setTextareaStyle } from './textarea-highlighting.js';
+import { setTextareaStyle } from './highlighter.js';
 
 
 
