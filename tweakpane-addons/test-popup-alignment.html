@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Popup Alignment</title>
+    <script src="../tweakpane-4.0.4.js"></script>
+    <script src="propertytable.js"></script>
+    <style>
+        body {
+            margin: 50px;
+            font-family: Arial, sans-serif;
+            background: #111;
+            color: #fff;
+        }
+        #container {
+            width: 300px;
+            margin: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    
+    <script>
+        // Create a property table with expandable folders
+        const pane = new propertyTable({ 
+            container: document.getElementById('container'),
+            title: 'Test Popup Alignment'
+        });
+
+        // Test object
+        const testObj = {
+            name: "Test Object",
+            value: 42,
+            enabled: true
+        };
+
+        // Add an expandable folder
+        const folder = pane.addFolder('Test Folder', {
+            expandable: true,
+            object: testObj,
+            options: {
+                name: { label: 'Name' },
+                value: { label: 'Value', min: 0, max: 100 },
+                enabled: { label: 'Enabled' }
+            }
+        });
+
+        console.log('Test page loaded. Click the "+" button to test popup alignment.');
+    </script>
+</body>
+</html>
