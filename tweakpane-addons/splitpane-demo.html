@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Simple SplitPane Demo</title>
     
-    <!-- External CSS -->
-    <link rel="stylesheet" href="./splitpane/splitpane.css">
+    <!-- CSS is now automatically injected by SplitPane! -->
     
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -88,64 +87,83 @@
         function init() {
             const container = document.getElementById('container');
             
-            // Main split
+            // Main split using built-in wrappers
             split = new SplitPane(container, { 
                 orientation: 'horizontal', 
                 splitRatio: 0.25, 
-                minSize: 2150 
+                minSize: 200,
+                panel1: {
+                    title: 'Explorer',
+                    content: null
+                }
             });
 
-            // Left panel - TreeView
-            const leftWrapper = createPanelWrapper('Explorer');
-            split.getPanel(1).appendChild(leftWrapper);
-            
+            // Create TreeView - getPanel now returns the content area automatically!
             new TreeView({
-                container: leftWrapper.querySelector('.scrollable-content'),
+                container: split.getPanel(1),
                 data: treeData
             });
 
-            // Right panel - nested split
+            // Right panel - nested split with built-in wrappers
             nestedSplit = new SplitPane(split.getPanel(2), { 
                 orientation: 'vertical', 
                 splitRatio: 0.7, 
-                minSize: 300 
+                minSize: 300,
+                panel1: {
+                    title: 'Properties',
+                    content: null
+                },
+                panel2: {
+                    title: 'Information',
+                    content: `
+                        <div class="info-panel">
+                            <h3>✨ Enhanced SplitPane Demo</h3>
+                            <div style="background: #2d4d2d; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #4caf50;">
+                                <strong>🎉 Built-in Panel Wrappers!</strong><br>
+                                No more manual createPanelWrapper() calls
+                            </div>
+                            <p><strong>New Features:</strong></p>
+                            <p>• ✅ Auto-injected CSS</p>
+                            <p>• ✅ Built-in panel wrappers</p>
+                            <p>• ✅ Cleaner constructor syntax</p>
+                            <p>• ✅ setPanel() with title option</p>
+                            <p>• ✅ getPanel() returns content area</p>
+                            <p>• ✅ Still compact & universal</p>
+                            
+                            <p><strong>Usage:</strong></p>
+                            <pre style="background: #333; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto;">
+// No DOM references needed!
+new TreeView({
+  container: split.getPanel(1),
+  data: treeData
+});
+                            </pre>
+                            <p>• Drag the splitters to resize!</p>
+                            <p>• Use buttons to toggle orientation</p>
+                        </div>
+                    `
+                }
             });
 
-            // Top right - Properties
-            const propWrapper = createPanelWrapper('Properties');
-            nestedSplit.getPanel(1).appendChild(propWrapper);
-            
+            // Create PropertyTable - getPanel returns the content area automatically!
             const propTable = new PropertyTable({
-                container: propWrapper.querySelector('.scrollable-content'),
+                container: nestedSplit.getPanel(1),
                 title: 'Object Properties',
                 expanded: true
             });
             propTable.bindControls(props);
-
-            // Bottom right - Info
-            const infoWrapper = createPanelWrapper('Information');
-            nestedSplit.getPanel(2).appendChild(infoWrapper);
-            
-            infoWrapper.querySelector('.scrollable-content').innerHTML = `
-                <div class="info-panel">
-                    <h3>Simple SplitPane</h3>
-                    <p>• Minimal code (~80 lines)</p>
-                    <p>• External CSS styling</p>
-                    <p>• Easy to understand</p>
-                    <p>• Drag the splitters!</p>
-                </div>
-            `;
         }
 
-        function createPanelWrapper(title) {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'panel-wrapper';
-            wrapper.innerHTML = `
-                <div class="panel-header">${title}</div>
-                <div class="scrollable-content"></div>
-            `;
-            return wrapper;
-        }
+        // No longer needed - built into SplitPane!
+        // function createPanelWrapper(title) {
+        //     const wrapper = document.createElement('div');
+        //     wrapper.className = 'panel-wrapper';
+        //     wrapper.innerHTML = `
+        //         <div class="panel-header">${title}</div>
+        //         <div class="scrollable-content"></div>
+        //     `;
+        //     return wrapper;
+        // }
 
         window.toggleOrientation = () => {
             isHorizontal = !isHorizontal;
