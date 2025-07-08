@@ -7,7 +7,6 @@ import { Pane } from './tweakpane-4.0.4.js';
 
 
 
-
 export function createPopupPane({ title = null, positionElement = null, width = 300, height = 20, onClose, fill, x, y }) {
     // Create popup container
     const popup = document.createElement('div');

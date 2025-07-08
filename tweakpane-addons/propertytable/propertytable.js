@@ -1,5 +1,6 @@
 import { Pane } from './tweakpane-4.0.4.js';
 import { createPopupPane } from './contextmenu.js';
+
 //=========================================================================================================================================
 
 
@@ -13,9 +14,9 @@ class propertyTable extends Pane {
     //========================================================================================================================================
     // This method binds multiple properties of an object to the pane
     // It takes an object with properties and an options object for each property. if there are no options, it will use an empty object.
-    bindControls = (objects, options) => {
+    bindControls = (objects, options,onclick=_=>{}) => {
         for (let key in objects) {
-            this.addBinding(objects, key, options[key] || {});
+            this.addBinding(objects, key, options[key] || {}).on('click', onclick);
         }
     }
 
@@ -30,7 +31,7 @@ class propertyTable extends Pane {
 
     //========================================================================================================================================    // Override the addBinding method to customize how properties are added to the pane
     // This method allows you to add custom logic for handling property tables
-    addBinding(target, property, options) {
+    addBinding(target, property, options,) {
         const binding = super.addBinding(target, property, options);
         // Add custom logic for property table if needed
         return binding;
@@ -44,13 +45,13 @@ class propertyTable extends Pane {
 
 
         // Attach bindControls to the folder
-        folder.bindControls = (objects, options) => {
+        folder.bindControls = (objects, options,onclick=_=>{}) => {
             folder.bindings = {
                 objects: objects,
                 options: options
             }
             for (let key in objects) {
-                folder.addBinding(objects, key, options?.[key] || {});
+                folder.addBinding(objects, key, options?.[key] || {}).on('click', onclick);
             }
         };
 
@@ -66,7 +67,7 @@ class propertyTable extends Pane {
                 if (currentPopup) currentPopup.remove();
                 params.value = ["text here", 0.0, { x: 0, y: 0 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 0 }, false][params.type];
                 let pane = createPopupPane({ positionElement: folder.element.querySelector('.tp-fldv_t'),title:"Add Variable" });
-                currentPopup = pane._popup;
+                currentPopup = pane._popup;                
                 pane.addBinding(params, 'name', { label: "Name" });
                 pane.addBinding(params, 'type', { label: "Type", options: { string: 0, float: 1, vec2: 2, vec3: 3, vec4: 4, boolean: 5 } })
                     .on('change', () => showPopup());
