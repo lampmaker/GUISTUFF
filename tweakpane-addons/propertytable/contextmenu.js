@@ -115,6 +115,8 @@ export function createPopupPane({ title = null, positionElement = null, width = 
 function detectBindingType(target, property) {
     const value = target[property];
 
+    // detect color strings
+    if (typeof value === 'string' && /^#[0-9A-Fa-f]{6}$/.test(value)) return 'color'; // hex color
     if (typeof value === 'boolean') return 'boolean';
     if (typeof value === 'string') return 'string';
     if (typeof value === 'number') return 'number';
@@ -141,6 +143,11 @@ function detectBindingType(target, property) {
 // It supports boolean, string, number, vec2, vec3, and vec4 types
 let activeContextmenu = null;
 export function addContextMenu(binding, target, property, options) {
+    // only for specific types of bindings
+     let type = detectBindingType(target, property);
+    if (![ 'number', 'vec2', 'vec3', 'vec4'].includes(type)) {
+        return;
+    }   
     binding.element.addEventListener('contextmenu', (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -152,7 +159,7 @@ export function addContextMenu(binding, target, property, options) {
             title: `Property: ${property}`,
             fill: (pane) => {
                 // // find the binding type 
-                let type = detectBindingType(target, property);
+               
 
                 // Helper function to create constraint controls
                 const createConstraintControl = (components, getValues, applyValues) => {
