@@ -13,6 +13,7 @@
  *   id?: string,            // Optional unique identifier
  *   label: string,          // Display text for the node
  *   children?: Array,       // Child nodes (optional)
+ *   expanded?: boolean,     // Initial expansion state (null/0/false = collapsed, true = expanded)
  *   data?: any,            // Custom data associated with the node
  *   [key: string]: any     // Any additional properties
  * }
@@ -89,8 +90,32 @@ export class TreeView {
         this.onNodeExpand = options.onNodeExpand || (() => {});
         this.onToggleClick = options.onToggleClick || (() => {});
 
+        // Initialize expansion state from data
+        this._initializeExpansionState(this.options.data, '');
+
         this._createContainer();
         this._render();
+    }
+
+    /**
+     * Initialize expansion state from node data
+     * Processes the 'expanded' property on nodes to set initial expansion state
+     * @private
+     */
+    _initializeExpansionState(nodes, path) {
+        nodes.forEach((node, index) => {
+            const nodePath = path ? `${path}.${index}` : `${index}`;
+            
+            // Check if node has expanded property and it's truthy (not null, 0, false, undefined)
+            if (node.expanded && node.expanded !== 0 && node.expanded !== null) {
+                this.expandedNodes.add(nodePath);
+            }
+            
+            // Recursively process children
+            if (node.children && node.children.length > 0) {
+                this._initializeExpansionState(node.children, nodePath);
+            }
+        });
     }
 
     _createContainer() {
@@ -531,6 +556,9 @@ export class TreeView {
      */
     setData(data) {
         this.options.data = data;
+        // Re-initialize expansion state from new data
+        this.expandedNodes.clear();
+        this._initializeExpansionState(this.options.data, '');
         this._render();
     }
 
@@ -598,6 +626,62 @@ export class TreeView {
     collapseAll() {
         this.expandedNodes.clear();
         this._render();
+    }
+
+    /**
+     * Get the expansion state of a node
+     * @param {string} path - The path to the node
+     * @returns {boolean} True if the node is expanded, false otherwise
+     */
+    isNodeExpanded(path) {
+        return this.expandedNodes.has(path);
+    }
+
+    /**
+     * Get all expanded node paths
+     * @returns {Array<string>} Array of expanded node paths
+     */
+    getExpandedNodes() {
+        return Array.from(this.expandedNodes);
+    }
+
+    /**
+     * Set the expansion state for multiple nodes
+     * @param {Array<string>} paths - Array of node paths to expand
+     */
+    setExpandedNodes(paths) {
+        this.expandedNodes.clear();
+        paths.forEach(path => this.expandedNodes.add(path));
+        this._render();
+    }
+
+    /**
+     * Get the current data with expansion state merged in
+     * This creates a copy of the original data with 'expanded' properties updated
+     * to reflect the current expansion state of the TreeView
+     * @returns {Array} Data structure with current expansion state
+     */
+    getDataWithExpansionState() {
+        return this._mergeExpansionState(this.options.data, '');
+    }
+
+    /**
+     * Merge current expansion state into data structure
+     * @private
+     */
+    _mergeExpansionState(nodes, basePath) {
+        return nodes.map((node, index) => {
+            const path = basePath ? `${basePath}.${index}` : `${index}`;
+            const nodeCopy = { ...node };
+            
+            // Only add expanded property if the node has children
+            if (node.children && node.children.length > 0) {
+                nodeCopy.expanded = this.expandedNodes.has(path);
+                nodeCopy.children = this._mergeExpansionState(node.children, path);
+            }
+            
+            return nodeCopy;
+        });
     }
 
     _visitAllNodes(nodes, basePath, callback) {

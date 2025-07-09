@@ -32,7 +32,7 @@ export const demoContents = [
         label: 'My Project',
         type: 'folder',
         toggles: noToggles,
-
+        expanded: true,  // Start expanded for demo purposes
         // toggles will inherit from folder type defaults
         children: [
             {
@@ -64,6 +64,7 @@ export const demoContents = [
                 id: 'components',
                 label: 'components',
                 type: 'folder',
+                expanded: true,  // Start expanded to show components
                 // toggles inherit from folder type defaults
                 children: [
                     {
@@ -109,6 +110,7 @@ export const demoContents = [
                 id: 'layers',
                 label: 'Visual Layers',
                 type: 'folder',
+                expanded: false,  // Start collapsed
                 // toggles inherit from folder type defaults
                 children: [
                     {
