@@ -259,6 +259,24 @@ export class TreeView {
      * @private
      */
     _createPropertyToggle(node, path, toggleKey, toggleDefinition, onToggleClick) {
+        const isActionToggle = !toggleDefinition?.values || toggleDefinition.values.length === 0;
+        const value = isActionToggle ? null : node.toggles[toggleKey];
+        let iconData = '?';
+        
+        if (toggleDefinition && toggleDefinition.icons) {
+            if (isActionToggle) {
+                // For action toggles, use the icon directly (not based on value)
+                iconData = typeof toggleDefinition.icons === 'string' 
+                    ? toggleDefinition.icons 
+                    : (toggleDefinition.icons.default || '?');
+            } else {
+                // For regular toggles, use icon based on current value
+                iconData = toggleDefinition.icons[value] || '?';
+            }
+        } else {
+            iconData = isActionToggle ? '⚡' : (value ? '✓' : '✗');
+        }
+        
         const toggle = document.createElement('span');
         toggle.className = 'treeview-property-toggle';
         toggle.dataset.property = toggleKey;
@@ -271,15 +289,22 @@ export class TreeView {
         toggle.style.width = '16px';
         toggle.style.textAlign = 'center';
         
-        const value = node.toggles[toggleKey];
-        
-        if (toggleDefinition && toggleDefinition.icons) {
-            toggle.textContent = toggleDefinition.icons[value] || '?';
-            toggle.title = `${toggleDefinition.label || toggleKey}: ${value}`;
+        // Set the icon content
+        if (typeof iconData === 'string' && iconData.trim().startsWith('<svg')) {
+            toggle.innerHTML = iconData;
+            const svg = toggle.querySelector('svg');
+            if (svg) {
+                svg.style.width = '100%';
+                svg.style.height = '100%';
+                svg.style.display = 'block';
+            }
         } else {
-            toggle.textContent = value ? '✓' : '✗';
-            toggle.title = `${toggleKey}: ${value}`;
+            toggle.textContent = iconData;
         }
+        
+        toggle.title = isActionToggle 
+            ? (toggleDefinition?.label || toggleKey)
+            : `${toggleDefinition?.label || toggleKey}: ${value}`;
         
         toggle.addEventListener('mouseenter', () => {
             toggle.style.backgroundColor = '#555';
@@ -303,11 +328,23 @@ export class TreeView {
      * @private
      */
     _handleToggleClick(node, path, toggleKey, toggleDefinition, onToggleClick) {
+        // Check if this is an action toggle (no values or empty values array)
+        const isActionToggle = !toggleDefinition?.values || toggleDefinition.values.length === 0;
+        
+        if (isActionToggle) {
+            // Action toggle - just call the callback without changing node data
+            if (onToggleClick) {
+                onToggleClick(path, toggleKey, null, null, node, 'action');
+            }
+            return;
+        }
+        
+        // Regular toggle - cycle through values
         if (node.toggles && toggleKey in node.toggles) {
             const oldValue = node.toggles[toggleKey];
             let newValue;
             
-            if (toggleDefinition && toggleDefinition.values) {
+            if (toggleDefinition && toggleDefinition.values && toggleDefinition.values.length > 0) {
                 // Cycle through defined values
                 const currentIndex = toggleDefinition.values.indexOf(oldValue);
                 const nextIndex = (currentIndex + 1) % toggleDefinition.values.length;
@@ -319,7 +356,7 @@ export class TreeView {
             
             node.toggles[toggleKey] = newValue;
             
-            // Update the toggle icon
+            // Update the toggle icon (only for regular toggles, not action toggles)
             const nodeElement = this.nodeElements.get(path);
             if (nodeElement) {
                 const toggle = nodeElement.querySelector(`[data-property="${toggleKey}"]`);
@@ -334,9 +371,9 @@ export class TreeView {
                 }
             }
             
-            // Call the callback
+            // Call the callback for regular toggles
             if (onToggleClick) {
-                onToggleClick(path, toggleKey, newValue, oldValue, node);
+                onToggleClick(path, toggleKey, newValue, oldValue, node, 'toggle');
             }
         }
     }
@@ -404,9 +441,11 @@ export class TreeView {
                 toggleColumn.style.textAlign = 'center';
                 toggleColumn.style.display = 'inline-block';
                 
-                // Check if this node uses this toggle
-                if (node.toggles && toggleKey in node.toggles) {
-                    const toggleDef = this.options.toggleDefinitions[toggleKey];
+                // Check if this node uses this toggle OR if it's an action toggle
+                const toggleDef = this.options.toggleDefinitions[toggleKey];
+                const isActionToggle = !toggleDef?.values || toggleDef.values.length === 0;
+                
+                if ((node.toggles && toggleKey in node.toggles) || isActionToggle) {
                     const toggle = this._createPropertyToggle(node, path, toggleKey, toggleDef, this.onToggleClick);
                     toggleColumn.appendChild(toggle);
                 }

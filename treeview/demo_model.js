@@ -13,24 +13,35 @@ export const demoModel = {
         folder: {
             expanded: '📁',
             collapsed: '📂',
-            default: '📁'
+            default: '📁',
+            allowedChildren: ['folder', 'file', 'component', 'layer', 'custom'] 
         },
         file: {
-            default: '📄'
+            default: '📄',
+            allowedChildren: ['component', 'layer', 'custom']
+
         },
         component: {
-            default: '🧩'
+            default: '🧩',
+            allowedChildren: ['layer', 'custom']
         },
         layer: {
-            default: '👁️'
+            default: '👁️',
+            allowedChildren: ['custom']
         },
         custom: {
-            default: '•'
+            default: '•',
+            allowedChildren: [] // Custom nodes can have any children
         }
     },
 
     // Toggle definitions - what toggles are available and how they behave
     toggleDefinitions: {
+        add:{            
+            label: 'Add Child Node',
+            icons:'➕',
+            values: [],     //=> callback? how? 
+        },
         visible: {
             label: 'Visibility',
             icons: { true: '👁️', false: '🙈' },
@@ -59,7 +70,7 @@ export const demoModel = {
     },
 
     // Order of toggle columns for consistent alignment
-    toggleOrder: ['visible', 'enabled', 'locked', 'active'],
+    toggleOrder: ['add', 'visible', 'enabled', 'locked', 'active'],
 
     // TreeView configuration
     treeViewConfig: {
@@ -80,8 +91,33 @@ export const demoCallbacks = {
         logEvent(`<span style="color:#4caf50;">Node:</span> ${expanded ? 'expanded' : 'collapsed'} → ${path}`);
     },
 
-    onToggleClick: (path, property, newValue, oldValue, node, logEvent, updateJsonViewer) => {
-        logEvent(`<span style="color:#ff9800;">Toggle:</span> '${property}' ${oldValue} → ${newValue} for '${node.label}' (${path})`);
-        updateJsonViewer();
+    onToggleClick: (path, property, newValue, oldValue, node, logEvent, updateJsonViewer, type) => {
+        if (type === 'action') {
+            // Handle action toggles
+            if (property === 'add') {
+                logEvent(`<span style="color:#4caf50;">Action:</span> Add child node requested for '${node.label}' (${path})`);
+                // Here you could show a dialog, add a default child, etc.
+                // For demo, let's add a simple child node
+                if (!node.children) {
+                    node.children = [];
+                }
+                const newChild = {
+                    id: `new_${Date.now()}`,
+                    label: `New Node ${node.children.length + 1}`,
+                    type: 'custom',
+                    toggles: {
+                        visible: true,
+                        enabled: true
+                    }
+                };
+                node.children.push(newChild);
+                updateJsonViewer();
+                logEvent(`<span style="color:#4caf50;">Added:</span> New child '${newChild.label}' to '${node.label}'`);
+            }
+        } else {
+            // Handle regular toggles
+            logEvent(`<span style="color:#ff9800;">Toggle:</span> '${property}' ${oldValue} → ${newValue} for '${node.label}' (${path})`);
+            updateJsonViewer();
+        }
     }
 };

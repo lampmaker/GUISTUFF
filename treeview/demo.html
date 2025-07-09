@@ -162,8 +162,12 @@
             onNodeExpand: (path, expanded) => {
                 demoCallbacks.onNodeExpand(path, expanded, logEvent);
             },
-            onToggleClick: (path, property, newValue, oldValue, node) => {
-                demoCallbacks.onToggleClick(path, property, newValue, oldValue, node, logEvent, updateJsonViewer);
+            onToggleClick: (path, property, newValue, oldValue, node, type) => {
+                demoCallbacks.onToggleClick(path, property, newValue, oldValue, node, logEvent, updateJsonViewer, type);
+                // If it's an action that might have added nodes, re-render the tree
+                if (type === 'action' && property === 'add') {
+                    treeview.setData(sampleData);
+                }
             }
         });
 
