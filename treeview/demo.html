@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TreeView Demo - Step 1</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .demo-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .demo-header {
+            padding: 15px 20px;
+            background-color: #2d2d2d;
+            border-bottom: 1px solid #444;
+            flex-shrink: 0;
+        }
+        .demo-content {
+            flex: 1;
+            min-height: 0;
+        }
+        h1 {
+            margin: 0;
+            color: #4fc3f7;
+            font-size: 24px;
+        }
+        .info {
+            background-color: #333;
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        .info ul {
+            margin: 5px 0;
+            padding-left: 20px;
+        }
+        .json-viewer {
+            background-color: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #444;
+        }
+        .events-log {
+            background-color: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #444;
+        }
+        .right-panel-content {
+            padding: 15px;
+            height: 100%;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .section-title {
+            color: #4fc3f7;
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="demo-container">
+        <div class="demo-header">
+            <h1>TreeView Comprehensive Toolbox - Step 1</h1>
+            <div class="info">
+                Enhanced treeview with: <strong>Node Types</strong> (folder, file, component, layer) • 
+                <strong>Type-specific Icons</strong> • <strong>Property Toggles</strong> (visible, enabled, locked) • 
+                <strong>Clear Documentation</strong>
+            </div>
+        </div>
+        <div class="demo-content" id="splitContainer"></div>
+    </div>
+
+    <script type="module">
+        import { TreeView } from './treeview.js';
+        import { SplitPane } from '../splitpane/splitpane.js';
+
+        // Sample data with different node types and properties
+        const sampleData = [
+            {
+                id: 'project',
+                label: 'My Project',
+                type: 'folder',
+                properties: {
+                    visible: true,
+                    enabled: true
+                },
+                children: [
+                    {
+                        id: 'src',
+                        label: 'src',
+                        type: 'folder',
+                        properties: {
+                            visible: true,
+                            enabled: true
+                        },
+                        children: [
+                            {
+                                id: 'main.js',
+                                label: 'main.js',
+                                type: 'file',
+                                properties: {
+                                    visible: true,
+                                    enabled: true,
+                                    locked: false
+                                }
+                            },
+                            {
+                                id: 'utils.js',
+                                label: 'utils.js',
+                                type: 'file',
+                                properties: {
+                                    visible: false,
+                                    enabled: true,
+                                    locked: true
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        id: 'components',
+                        label: 'components',
+                        type: 'folder',
+                        properties: {
+                            visible: true,
+                            enabled: true
+                        },
+                        children: [
+                            {
+                                id: 'header',
+                                label: 'Header Component',
+                                type: 'component',
+                                properties: {
+                                    visible: true,
+                                    enabled: false
+                                }
+                            },
+                            {
+                                id: 'sidebar',
+                                label: 'Sidebar Component',
+                                type: 'component',
+                                properties: {
+                                    visible: true,
+                                    enabled: true
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        id: 'layers',
+                        label: 'Visual Layers',
+                        type: 'folder',
+                        properties: {
+                            visible: true,
+                            enabled: true
+                        },
+                        children: [
+                            {
+                                id: 'background',
+                                label: 'Background Layer',
+                                type: 'layer',
+                                properties: {
+                                    visible: true,
+                                    enabled: true,
+                                    locked: false
+                                }
+                            },
+                            {
+                                id: 'ui',
+                                label: 'UI Layer',
+                                type: 'layer',
+                                properties: {
+                                    visible: false,
+                                    enabled: true,
+                                    locked: true
+                                }
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+
+        // Create the splitpane
+        const splitContainer = document.getElementById('splitContainer');
+        const split = new SplitPane(splitContainer, {
+            orientation: 'horizontal',
+            splitRatio: 0.2,
+            minSize: 300,
+            panel1: { title: 'Tree View' },
+            panel2: { title: 'Data & Events' }
+        });
+
+        // Get the panel content areas
+        const leftPanel = split.getPanel(1);
+        const rightPanel = split.getPanel(2);
+
+        // Create right panel content
+        const rightContent = document.createElement('div');
+        rightContent.className = 'right-panel-content';
+        rightContent.innerHTML = `
+            <div class="section-title">Tree Data (JSON)</div>
+            <div id="jsonViewer" class="json-viewer"></div>
+            
+            <div class="section-title">Events Log</div>
+            <div id="eventsLog" class="events-log"></div>
+        `;
+        rightPanel.appendChild(rightContent);
+
+        const jsonViewer = document.getElementById('jsonViewer');
+        const eventsLog = document.getElementById('eventsLog');
+        
+        function updateJsonViewer() {
+            jsonViewer.innerHTML = `<pre style="margin:0;"><code>${escapeHtml(JSON.stringify(sampleData, null, 2))}</code></pre>`;
+        }
+        
+        // Utility to escape HTML for safe code display
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(tag) {
+                const chars = {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                };
+                return chars[tag] || tag;
+            });
+        }
+
+        function logEvent(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const eventDiv = document.createElement('div');
+            eventDiv.style.marginBottom = '4px';
+            eventDiv.style.color = '#a0c0ff';
+            eventDiv.innerHTML = `<span style="color: #888;">[${timestamp}]</span> ${message}`;
+            eventsLog.appendChild(eventDiv);
+            eventsLog.scrollTop = eventsLog.scrollHeight;
+        }
+
+        // Create the treeview in the left panel
+        const treeview = new TreeView({
+            container: leftPanel,
+            data: sampleData,
+            showIcons: true,
+            showTypeIcons: true,
+            showPropertyToggles: ['visible', 'enabled', 'locked'],
+            multiSelect: true,
+            onSelectionChange: (selectedPaths, node) => {
+                logEvent(`<span style="color: #4fc3f7;">Selection:</span> ${selectedPaths.join(', ')} | <span style="color: #ffeb3b;">Node:</span> ${node.label}`);
+            },
+            onNodeExpand: (path, expanded) => {
+                logEvent(`<span style="color: #4caf50;">Node:</span> ${expanded ? 'expanded' : 'collapsed'} → ${path}`);
+            },
+            onPropertyToggle: (path, property, newValue, oldValue, node) => {
+                logEvent(`<span style="color: #ff9800;">Property:</span> '${property}' ${oldValue} → ${newValue} for '${node.label}' (${path})`);
+                updateJsonViewer(); // Update JSON when properties change
+            }
+        });
+
+        // Initialize
+        updateJsonViewer();
+        logEvent('TreeView demo initialized with <span style="color: #4fc3f7;">enhanced features</span>');
+        logEvent('Try: <span style="color: #ffeb3b;">selecting nodes</span>, <span style="color: #4caf50;">expanding folders</span>, <span style="color: #ff9800;">toggling properties</span>');
+    </script>
+</body>
+</html>
