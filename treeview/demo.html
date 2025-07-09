@@ -106,7 +106,7 @@
         const splitContainer = document.getElementById('splitContainer');
         const split = new SplitPane(splitContainer, {
             orientation: 'horizontal',
-            splitRatio: 0.2,
+            splitRatio: 0.3,
             minSize: 300,
             panel1: { title: 'Tree View' },
             panel2: { title: '' }
@@ -115,7 +115,7 @@
         const split2 = new SplitPane(split.getPanel(2), {
             orientation: 'vertical',
             splitRatio: 0.5,
-            minSize: 100,
+            minSize: 300,
             panel1: { title: 'Tree Data (JSON)', content: '' },
             panel2: { title: 'Events Log', content: '' }
         });
@@ -166,7 +166,7 @@
                 updateJsonViewer();
             },
             onToggleClick: (path, property, newValue, oldValue, node, type) => {
-                demoCallbacks.onToggleClick(path, property, newValue, oldValue, node, logEvent, updateJsonViewer, type);
+                demoCallbacks.onToggleClick(path, property, newValue, oldValue, node, type, logEvent, updateJsonViewer);
                 // If it's an action that might have added nodes, re-render the tree
                 if (type === 'action' && property === 'add') {
                     treeview.setData(sampleData);
@@ -176,9 +176,6 @@
 
         // Initialize
         updateJsonViewer();
-        
-        // Debug: Print all paths
-        treeview.debugPaths();
         
         logEvent(`TreeView demo initialized with <span style="color:#4fc3f7;">enhanced features</span>`);
         logEvent(`Project node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0')}</span>`);

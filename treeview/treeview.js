@@ -110,7 +110,6 @@ export class TreeView {
     _renderNodes(nodes, parentElement, path) {
         nodes.forEach((node, index) => {
             const nodePath = path ? `${path}.${index}` : `${index}`;
-            console.log(`Rendering node: ${node.label} at path: ${nodePath}`);
             const nodeElement = this._createNodeElement(node, nodePath);
             parentElement.appendChild(nodeElement);
             
@@ -122,7 +121,6 @@ export class TreeView {
                 // Simple: just check the node's expanded property directly
                 const isExpanded = node.expanded === true;
                 childrenContainer.style.display = isExpanded ? 'block' : 'none';
-                console.log(`Children container for ${node.label}: expanded=${node.expanded}, isExpanded=${isExpanded}, display = ${childrenContainer.style.display}`);
                 
                 this._renderNodes(node.children, childrenContainer, nodePath);
                 parentElement.appendChild(childrenContainer);
@@ -195,8 +193,6 @@ export class TreeView {
     }
 
     _handleNodeClick(node, path, nodeElement) {
-        console.log(`Node clicked: ${path}, has children: ${node.children && node.children.length > 0}`);
-        
         // Handle expansion/collapse
         if (node.children && node.children.length > 0) {
             this._toggleNode(path);
@@ -231,21 +227,15 @@ export class TreeView {
     }
 
     _toggleNode(path) {
-        console.log(`Toggling node at path: ${path}`);
         const node = this._getNodeByPath(path);
         if (!node) {
-            console.warn(`Node not found for path: ${path}`);
             return;
         }
-        
-        console.log(`Node found:`, node, `Current expanded: ${node.expanded}`);
         
         // Simple: just flip the expanded property on the node itself
         // Handle undefined as false
         const currentExpanded = node.expanded === true;
         node.expanded = !currentExpanded;
-        
-        console.log(`New expanded state: ${node.expanded} (was: ${currentExpanded})`);
         
         // Update the UI
         this._render();
@@ -264,7 +254,6 @@ export class TreeView {
         for (let i = 0; i < pathParts.length; i++) {
             const index = pathParts[i];
             if (!current[index]) {
-                console.warn(`Node not found at path ${path}, failed at index ${index}, step ${i}`);
                 return null;
             }
             
@@ -275,7 +264,6 @@ export class TreeView {
                 // Not the last part, move to children
                 current = current[index].children;
                 if (!current) {
-                    console.warn(`No children found at path ${path}, at index ${index}, step ${i}`);
                     return null;
                 }
             }
@@ -361,14 +349,19 @@ export class TreeView {
         const isActionToggle = !toggleDefinition?.values || toggleDefinition.values.length === 0;
         
         if (isActionToggle) {
-            // Action toggle - just call the callback without changing node data
-            if (onToggleClick) {
-                onToggleClick(path, toggleKey, null, null, node, 'action');
+            // Handle built-in actions like 'add'
+            if (toggleKey === 'add') {
+                this._handleAddChildNode(node, path);
+            } else {
+                // Custom action toggle - call the callback
+                if (onToggleClick) {
+                    onToggleClick(path, toggleKey, null, null, node, 'action');
+                }
             }
             return;
         }
         
-        // Regular toggle - cycle through values
+        // Regular toggle handling
         if (this._shouldShowToggle(node, toggleKey) && !isActionToggle) {
             // Ensure node.toggles exists
             if (!node.toggles) {
@@ -409,6 +402,128 @@ export class TreeView {
             if (onToggleClick) {
                 onToggleClick(path, toggleKey, newValue, oldValue, node, 'toggle');
             }
+        }
+    }
+
+    /**
+     * Handle adding child nodes
+     * @private
+     */
+    _handleAddChildNode(node, path) {
+        const nodeType = node.type || 'custom';
+        const allowedChildren = this.options.nodeTypes[nodeType]?.allowedChildren || [];
+        
+        if (allowedChildren.length === 0) {
+            console.warn(`No allowed child types for node type '${nodeType}'`);
+            return;
+        }
+        
+        if (allowedChildren.length === 1) {
+            this._addChildNode(node, allowedChildren[0]);
+        } else {
+            this._showChildTypeMenu(node, allowedChildren, path);
+        }
+    }
+
+    /**
+     * Add a child node of the specified type
+     * @private
+     */
+    _addChildNode(node, childType) {
+        if (!node.children) {
+            node.children = [];
+        }
+        
+        const defaultToggles = this.options.nodeTypes[childType]?.defaultToggles || {};
+        const newChild = {
+            id: `new_${Date.now()}`,
+            label: `New ${childType} ${node.children.length + 1}`,
+            type: childType,
+            toggles: { ...defaultToggles }
+        };
+        
+        node.children.push(newChild);
+        node.expanded = true; // Expand parent to show new child
+        this._render();
+        
+        // Notify via callback
+        if (this.onToggleClick) {
+            this.onToggleClick(null, 'add', null, null, newChild, 'add_child');
+        }
+    }
+
+    /**
+     * Show context menu for child type selection
+     * @private
+     */
+    _showChildTypeMenu(node, allowedChildren, path) {
+        // Remove any existing menu
+        this._removeChildTypeMenu();
+        
+        const menu = document.createElement('div');
+        menu.className = 'treeview-child-type-menu';
+        menu.style.cssText = `
+            position: absolute;
+            background: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 4px;
+            z-index: 1000;
+            font-family: monospace;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        `;
+        
+        allowedChildren.forEach(childType => {
+            const item = document.createElement('div');
+            item.textContent = `Add ${childType}`;
+            item.style.cssText = `
+                padding: 4px 8px;
+                cursor: pointer;
+                border-radius: 2px;
+            `;
+            item.onmouseenter = () => item.style.backgroundColor = '#404040';
+            item.onmouseleave = () => item.style.backgroundColor = '';
+            item.onclick = () => {
+                this._addChildNode(node, childType);
+                this._removeChildTypeMenu();
+            };
+            menu.appendChild(item);
+        });
+        
+        document.body.appendChild(menu);
+        this._currentMenu = menu;
+        
+        // Position menu near the add button
+        const nodeElement = this.nodeElements.get(path);
+        if (nodeElement) {
+            const addButton = nodeElement.querySelector('[data-property="add"]');
+            if (addButton) {
+                const rect = addButton.getBoundingClientRect();
+                menu.style.left = `${rect.left}px`;
+                menu.style.top = `${rect.bottom + 2}px`;
+            }
+        }
+        
+        // Close menu on outside click
+        setTimeout(() => {
+            document.addEventListener('click', this._closeMenuHandler = () => this._removeChildTypeMenu(), { once: true });
+        }, 0);
+    }
+
+    /**
+     * Remove child type menu
+     * @private
+     */
+    _removeChildTypeMenu() {
+        if (this._currentMenu && this._currentMenu.parentNode) {
+            this._currentMenu.parentNode.removeChild(this._currentMenu);
+        }
+        this._currentMenu = null;
+        if (this._closeMenuHandler) {
+            document.removeEventListener('click', this._closeMenuHandler);
+            this._closeMenuHandler = null;
         }
     }
 
@@ -643,6 +758,7 @@ export class TreeView {
      * Destroy the tree view and clean up
      */
     destroy() {
+        this._removeChildTypeMenu();
         this.container.remove();
         this.nodeElements.clear();
         this.selectedNodes.clear();

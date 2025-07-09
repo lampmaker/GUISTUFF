@@ -55,7 +55,7 @@ export const demoModel = {
         },
         custom: {
             default: '•',
-            allowedChildren: [], // Custom nodes can have any children
+            allowedChildren: ['folder', 'file', 'component', 'layer', 'custom'], // Custom nodes can have any children
             defaultToggles: {
                 add: true,      // Custom nodes are flexible
                 visible: true,
@@ -68,7 +68,7 @@ export const demoModel = {
     toggleDefinitions: {
         add:{            
             label: 'Add Child Node',
-            icons:'➕',
+            icons:'+',
             values: [],     //=> callback? how? 
         },
         visible: {
@@ -120,31 +120,13 @@ export const demoCallbacks = {
         logEvent(`<span style="color:#4caf50;">Node:</span> ${expanded ? 'expanded' : 'collapsed'} → ${path}`);
     },
 
-    onToggleClick: (path, property, newValue, oldValue, node, logEvent, updateJsonViewer, type) => {
-        if (type === 'action') {
-            // Handle action toggles
-            if (property === 'add') {
-                logEvent(`<span style="color:#4caf50;">Action:</span> Add child node requested for '${node.label}' (${path})`);
-                // Here you could show a dialog, add a default child, etc.
-                // For demo, let's add a simple child node
-                if (!node.children) {
-                    node.children = [];
-                }
-                const newChild = {
-                    id: `new_${Date.now()}`,
-                    label: `New Node ${node.children.length + 1}`,
-                    type: 'custom',
-                    toggles: {
-                        visible: true,
-                        enabled: true
-                    }
-                };
-                node.children.push(newChild);
-                updateJsonViewer();
-                logEvent(`<span style="color:#4caf50;">Added:</span> New child '${newChild.label}' to '${node.label}'`);
-            }
+    onToggleClick: (path, property, newValue, oldValue, node, type, logEvent, updateJsonViewer) => {
+        if (type === 'add_child') {
+            logEvent(`<span style="color:#4caf50;">Added:</span> New child '${node.label}' (type: ${node.type})`);
+            updateJsonViewer();
+        } else if (type === 'action') {
+            logEvent(`<span style="color:#4caf50;">Action:</span> ${property} triggered`);
         } else {
-            // Handle regular toggles
             logEvent(`<span style="color:#ff9800;">Toggle:</span> '${property}' ${oldValue} → ${newValue} for '${node.label}' (${path})`);
             updateJsonViewer();
         }
