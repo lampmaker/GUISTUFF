@@ -16,8 +16,9 @@ const POPUP_CONSTANTS = {
         WIDTH: 300,
         HEIGHT: 20,
         MARGIN_TOP: 20,
-        POSITION_OFFSET: { x: 5, y: 4 },
-        Z_INDEX: 9999
+        MARGINS: { left: 5, right:5, top: 4 },
+        Z_INDEX: 9999,
+        MAXWIDTH:300
     },
     STYLES: {
         POPUP: {
@@ -131,12 +132,17 @@ function _positionPopup(popup, positionElement, x, y, width, height) {
 
     if (positionElement) {
         const rect = positionElement.getBoundingClientRect();
+        let width= rect.width - (DEFAULTS.MARGINS.left + DEFAULTS.MARGINS.right);
+        let left= rect.left + DEFAULTS.MARGINS.left;
+        left+=width;
+        width= Math.min(width, POPUP_CONSTANTS.DEFAULTS.MAXWIDTH);
+        left-=width;
         Object.assign(positionStyle, {
-            left: `${rect.left + DEFAULTS.POSITION_OFFSET.x}px`,
-            top: `${rect.bottom + DEFAULTS.POSITION_OFFSET.y}px`,
-            width: `${rect.width}px`,
-            minWidth: `${rect.width}px`,
-            maxWidth: `${rect.width}px`,
+            left: `${left}px`,
+            top: `${rect.bottom + DEFAULTS.MARGINS.top}px`,
+            width: `${width}px`,
+            minWidth: `${width}px`,
+            maxWidth: `${width}px`,
             transform: 'none'
         });
     } else if (x != null && y != null) {
