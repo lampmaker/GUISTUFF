@@ -84,38 +84,13 @@ export class TreeView {
         };
 
         this.selectedNodes = new Set();
-        this.expandedNodes = new Set();
         this.nodeElements = new Map();
         this.onSelectionChange = options.onSelectionChange || (() => {});
         this.onNodeExpand = options.onNodeExpand || (() => {});
         this.onToggleClick = options.onToggleClick || (() => {});
 
-        // Initialize expansion state from data
-        this._initializeExpansionState(this.options.data, '');
-
         this._createContainer();
         this._render();
-    }
-
-    /**
-     * Initialize expansion state from node data
-     * Processes the 'expanded' property on nodes to set initial expansion state
-     * @private
-     */
-    _initializeExpansionState(nodes, path) {
-        nodes.forEach((node, index) => {
-            const nodePath = path ? `${path}.${index}` : `${index}`;
-            
-            // Check if node has expanded property and it's truthy (not null, 0, false, undefined)
-            if (node.expanded && node.expanded !== 0 && node.expanded !== null) {
-                this.expandedNodes.add(nodePath);
-            }
-            
-            // Recursively process children
-            if (node.children && node.children.length > 0) {
-                this._initializeExpansionState(node.children, nodePath);
-            }
-        });
     }
 
     _createContainer() {
@@ -143,8 +118,8 @@ export class TreeView {
                 childrenContainer.className = 'treeview-children';
                 Object.assign(childrenContainer.style, TreeView.CONSTANTS.STYLES.CHILDREN);
                 
-                const isExpanded = this.expandedNodes.has(nodePath);
-                childrenContainer.style.display = isExpanded ? 'block' : 'none';
+                // Simple: just check the node's expanded property directly
+                childrenContainer.style.display = node.expanded ? 'block' : 'none';
                 
                 this._renderNodes(node.children, childrenContainer, nodePath);
                 parentElement.appendChild(childrenContainer);
@@ -164,7 +139,7 @@ export class TreeView {
         // Use custom renderer if provided, otherwise use default
         if (this.options.nodeRenderer) {
             const customContent = this.options.nodeRenderer(node, path, {
-                isExpanded: this.expandedNodes.has(path),
+                isExpanded: node.expanded || false,
                 isSelected: this.selectedNodes.has(path),
                 hasChildren: node.children && node.children.length > 0
             });
@@ -178,7 +153,7 @@ export class TreeView {
         } else {
             // Use default renderer with toggle support
             const defaultContent = this._defaultNodeRenderer(node, path, {
-                isExpanded: this.expandedNodes.has(path),
+                isExpanded: node.expanded || false,
                 isSelected: this.selectedNodes.has(path),
                 hasChildren: node.children && node.children.length > 0
             });
@@ -251,32 +226,35 @@ export class TreeView {
     }
 
     _toggleNode(path) {
-        const isExpanded = this.expandedNodes.has(path);
+        const node = this._getNodeByPath(path);
+        if (!node) return;
         
-        if (isExpanded) {
-            this.expandedNodes.delete(path);
-        } else {
-            this.expandedNodes.add(path);
-        }
+        // Simple: just flip the expanded property on the node itself
+        node.expanded = !node.expanded;
         
-        // Update expansion icon
-        const nodeElement = this.nodeElements.get(path);
-        if (nodeElement && this.options.showIcons) {
-            const expandIcon = nodeElement.querySelector('.treeview-expand-icon');
-            if (expandIcon) {
-                expandIcon.textContent = isExpanded 
-                    ? TreeView.CONSTANTS.ICONS.COLLAPSED 
-                    : TreeView.CONSTANTS.ICONS.EXPANDED;
+        // Update the UI
+        this._render();
+        
+        this.onNodeExpand(path, node.expanded);
+    }
+
+    /**
+     * Get a node by its path
+     * @private
+     */
+    _getNodeByPath(path) {
+        const pathParts = path.split('.').map(Number);
+        let current = this.options.data;
+        
+        for (const index of pathParts) {
+            if (!current[index]) return null;
+            if (pathParts.indexOf(index) === pathParts.length - 1) {
+                return current[index]; // Last part, return the node
             }
+            current = current[index].children;
+            if (!current) return null;
         }
-        
-        // Toggle children visibility
-        const childrenContainer = nodeElement.nextElementSibling;
-        if (childrenContainer && childrenContainer.classList.contains('treeview-children')) {
-            childrenContainer.style.display = isExpanded ? 'none' : 'block';
-        }
-        
-        this.onNodeExpand(path, !isExpanded);
+        return null;
     }
 
     /**
@@ -556,9 +534,6 @@ export class TreeView {
      */
     setData(data) {
         this.options.data = data;
-        // Re-initialize expansion state from new data
-        this.expandedNodes.clear();
-        this._initializeExpansionState(this.options.data, '');
         this._render();
     }
 
@@ -602,30 +577,12 @@ export class TreeView {
      * @param {boolean} expanded - Whether to expand or collapse
      */
     setNodeExpanded(path, expanded) {
-        const isCurrentlyExpanded = this.expandedNodes.has(path);
-        if (expanded !== isCurrentlyExpanded) {
-            this._toggleNode(path);
+        const node = this._getNodeByPath(path);
+        if (node && node.expanded !== expanded) {
+            node.expanded = expanded;
+            this._render();
+            this.onNodeExpand(path, expanded);
         }
-    }
-
-    /**
-     * Expand all nodes
-     */
-    expandAll() {
-        this._visitAllNodes(this.options.data, '', (node, path) => {
-            if (node.children && node.children.length > 0) {
-                this.expandedNodes.add(path);
-            }
-        });
-        this._render();
-    }
-
-    /**
-     * Collapse all nodes
-     */
-    collapseAll() {
-        this.expandedNodes.clear();
-        this._render();
     }
 
     /**
@@ -634,54 +591,16 @@ export class TreeView {
      * @returns {boolean} True if the node is expanded, false otherwise
      */
     isNodeExpanded(path) {
-        return this.expandedNodes.has(path);
+        const node = this._getNodeByPath(path);
+        return node ? (node.expanded || false) : false;
     }
 
     /**
-     * Get all expanded node paths
-     * @returns {Array<string>} Array of expanded node paths
+     * Get the current data (which already contains expansion state)
+     * @returns {Array} The current data structure with expansion state
      */
-    getExpandedNodes() {
-        return Array.from(this.expandedNodes);
-    }
-
-    /**
-     * Set the expansion state for multiple nodes
-     * @param {Array<string>} paths - Array of node paths to expand
-     */
-    setExpandedNodes(paths) {
-        this.expandedNodes.clear();
-        paths.forEach(path => this.expandedNodes.add(path));
-        this._render();
-    }
-
-    /**
-     * Get the current data with expansion state merged in
-     * This creates a copy of the original data with 'expanded' properties updated
-     * to reflect the current expansion state of the TreeView
-     * @returns {Array} Data structure with current expansion state
-     */
-    getDataWithExpansionState() {
-        return this._mergeExpansionState(this.options.data, '');
-    }
-
-    /**
-     * Merge current expansion state into data structure
-     * @private
-     */
-    _mergeExpansionState(nodes, basePath) {
-        return nodes.map((node, index) => {
-            const path = basePath ? `${basePath}.${index}` : `${index}`;
-            const nodeCopy = { ...node };
-            
-            // Only add expanded property if the node has children
-            if (node.children && node.children.length > 0) {
-                nodeCopy.expanded = this.expandedNodes.has(path);
-                nodeCopy.children = this._mergeExpansionState(node.children, path);
-            }
-            
-            return nodeCopy;
-        });
+    getData() {
+        return this.options.data;
     }
 
     _visitAllNodes(nodes, basePath, callback) {
@@ -701,6 +620,5 @@ export class TreeView {
         this.container.remove();
         this.nodeElements.clear();
         this.selectedNodes.clear();
-        this.expandedNodes.clear();
     }
 }

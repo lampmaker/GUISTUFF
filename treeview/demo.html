@@ -121,9 +121,8 @@
         });
 
         function updateJsonViewer() {
-            // Get data with current expansion state
-            const dataWithExpansion = treeview.getDataWithExpansionState();
-            split2.setPanel(1, `<pre style="margin:0;"><code>${escapeHtml(JSON.stringify(dataWithExpansion, null, 2))}</code></pre>`);
+            // Simple: just show the current data which already contains expansion state
+            split2.setPanel(1, `<pre style="margin:0;"><code>${escapeHtml(JSON.stringify(treeview.getData(), null, 2))}</code></pre>`);
         }
 
         function logEvent(message) {
@@ -163,9 +162,6 @@
             },
             onNodeExpand: (path, expanded) => {
                 demoCallbacks.onNodeExpand(path, expanded, logEvent);
-                // Log the current expansion state using the new API
-                const expandedNodes = treeview.getExpandedNodes();
-                logEvent(`All expanded nodes: <span style="color:#81c784;">[${expandedNodes.join(', ')}]</span>`);
                 // Update JSON viewer to reflect expansion state changes
                 updateJsonViewer();
             },
@@ -181,13 +177,10 @@
         // Initialize
         updateJsonViewer();
         
-        // Log initial expansion state
-        const expandedNodes = treeview.getExpandedNodes();
         logEvent(`TreeView demo initialized with <span style="color:#4fc3f7;">enhanced features</span>`);
-        logEvent(`Initial expanded nodes: <span style="color:#81c784;">[${expandedNodes.join(', ')}]</span>`);
-        logEvent(`Project node (0) expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0')}</span>`);
-        logEvent(`Components node (0.1) expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0.1')}</span>`);
-        logEvent(`Layers node (0.3) expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0.3')}</span>`);
+        logEvent(`Project node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0')}</span>`);
+        logEvent(`Components node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0.1')}</span>`);
+        logEvent(`Layers node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0.3')}</span>`);
         logEvent('Try: <span style="color:#ffeb3b;">selecting nodes</span>, <span style="color:#4caf50;">expanding folders</span>, <span style="color:#ff9800;">toggling properties</span> (👁️📍🔒▶️)');
     </script>
 </body>
