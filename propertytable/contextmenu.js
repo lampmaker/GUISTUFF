@@ -24,7 +24,7 @@ const POPUP_CONSTANTS = {
         POPUP: {
             position: 'fixed',
             background: '#bbb',
-            borderRadius: '8px',
+            borderRadius: '1px',
             boxShadow: '0 4px 24px #0008',
             padding: '2px'
         },

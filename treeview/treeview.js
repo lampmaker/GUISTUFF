@@ -137,8 +137,20 @@ export class TreeView {
         nodeDiv.dataset.path = path;
         Object.assign(nodeDiv.style, TreeView.CONSTANTS.STYLES.NODE);
         
+        // Apply node type styling
+        const nodeType = node.type || 'custom';
+        const nodeTypeDefinition = this.options.nodeTypes[nodeType];
+        if (nodeTypeDefinition?.style) {
+            Object.assign(nodeDiv.style, nodeTypeDefinition.style);
+        }
+        
         const contentDiv = document.createElement('div');
         Object.assign(contentDiv.style, TreeView.CONSTANTS.STYLES.NODE_CONTENT);
+        
+        // Apply node type content styling
+        if (nodeTypeDefinition?.contentStyle) {
+            Object.assign(contentDiv.style, nodeTypeDefinition.contentStyle);
+        }
         
         // Use custom renderer if provided, otherwise use default
         if (this.options.nodeRenderer) {
@@ -634,6 +646,11 @@ export class TreeView {
                 icon = state.isExpanded ? (typeIcons?.expanded || icon) : (typeIcons?.collapsed || icon);
             }
             
+            // Apply icon-specific styling from node type definition
+            if (typeIcons?.iconStyle) {
+                Object.assign(typeIcon.style, typeIcons.iconStyle);
+            }
+            
             if (typeof icon === 'string' && icon.includes('<svg')) {
                 typeIcon.innerHTML = icon;
                 const svg = typeIcon.querySelector('svg');
@@ -641,6 +658,11 @@ export class TreeView {
                     svg.style.width = '12px';
                     svg.style.height = '12px';
                     svg.style.display = 'block';
+                    
+                    // Apply SVG-specific styling from node type definition
+                    if (typeIcons?.svgStyle) {
+                        Object.assign(svg.style, typeIcons.svgStyle);
+                    }
                 }
             } else {
                 typeIcon.textContent = icon;
@@ -652,6 +674,14 @@ export class TreeView {
         const label = document.createElement('span');
         label.className = 'treeview-label';
         label.textContent = node.label || node.name || `Node ${path}`;
+        
+        // Apply label-specific styling from node type definition
+        const nodeType = node.type || 'custom';
+        const typeDefinition = this.options.nodeTypes[nodeType];
+        if (typeDefinition?.labelStyle) {
+            Object.assign(label.style, typeDefinition.labelStyle);
+        }
+        
         container.appendChild(label);
 
         // Property toggles with column alignment

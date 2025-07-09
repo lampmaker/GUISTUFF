@@ -18,6 +18,19 @@ export const demoModel = {
                 visible: true,
                 enabled: true,
                 locked: false
+            },
+            style: {
+            //    backgroundColor: 'rgba(255, 193, 7, 0.1)',  // Light amber background
+            //    borderLeft: '3px solid #ffc107'              // Amber left border
+            },
+            contentStyle: {
+                //fontWeight: '600'                            // Bold text for folders
+            },
+            svgStyle: {
+                color: '#ff8f00'                             // Orange folder icons
+            },
+            labelStyle: {
+                color: '#fff'                             // Dark orange folder labels
             }
         },
         file: {
@@ -28,6 +41,16 @@ export const demoModel = {
                 visible: true,
                 enabled: true,
                 locked: false
+            },
+            style: {
+          //      backgroundColor: 'rgba(33, 150, 243, 0.05)'  // Light blue background
+            },
+            svgStyle: {
+                color: '#1976d2'                             // Blue file icons
+            },
+            labelStyle: {
+                color: '#aaa',                            // Dark blue file labels
+                fontStyle: 'italic'
             }
         },
         component: {
@@ -38,6 +61,17 @@ export const demoModel = {
                 visible: true,
                 enabled: true,
                 active: 'idle'
+            },
+            style: {
+                //backgroundColor: 'rgba(156, 39, 176, 0.08)', // Light purple background
+                //borderRadius: '4px'
+            },
+            svgStyle: {
+                color: '#7b1fa2'                             // Purple component icons
+            },
+            labelStyle: {
+            //    color: '#4a148c',                            // Dark purple component labels
+                fontWeight: '500'
             }
         },
         layer: {
@@ -49,6 +83,17 @@ export const demoModel = {
                 enabled: true,
                 locked: false,
                 active: 'stopped'
+            },
+            style: {
+                backgroundColor: 'rgba(76, 175, 80, 0.06)',  // Light green background
+      //          borderBottom: '1px solid #4caf50'
+            },
+            svgStyle: {
+                color: '#2e7d32'                             // Green layer icons
+            },
+            labelStyle: {
+           //     color: '#1b5e20',                            // Dark green layer labels
+                fontSize: '13px'
             }
         },
         custom: {
@@ -58,6 +103,13 @@ export const demoModel = {
                 add: true,      // Custom nodes are flexible
                 visible: true,
                 enabled: true
+            },
+            style: {
+                backgroundColor: 'rgba(158, 158, 158, 0.05)' // Light gray background
+            },
+            labelStyle: {
+                color: '#616161',                            // Gray custom labels
+                fontSize: '12px'
             }
         }
     },
@@ -69,7 +121,7 @@ export const demoModel = {
             icons: icons.plus,
             values: [],     // Action toggle
             styles: {
-                default: { color: '#4caf50' }  // Green color for add button
+                default: { color: '#FFF', "background-color":"#444"}  // Green color for add button
             }
         },
         visible: {
