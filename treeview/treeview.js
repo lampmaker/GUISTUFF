@@ -351,8 +351,8 @@ export class TreeView {
         container.style.alignItems = 'center';
         container.style.width = '100%';
 
-        // Expansion icon
-        if (state.hasChildren) {
+        // Expansion icon (only if showIcons is enabled)
+        if (this.options.showIcons && state.hasChildren) {
             const expandIcon = document.createElement('span');
             expandIcon.className = 'treeview-expand-icon';
             expandIcon.style.marginRight = '4px';
@@ -362,24 +362,26 @@ export class TreeView {
             container.appendChild(expandIcon);
         }
 
-        // Type icon
-        const typeIcon = document.createElement('span');
-        typeIcon.className = 'treeview-type-icon';
-        typeIcon.style.marginRight = '4px';
-        typeIcon.style.minWidth = '12px';
-        typeIcon.style.textAlign = 'center';
-        
-        const nodeType = node.type || 'custom';
-        const typeIcons = this.options.nodeTypes[nodeType];
-        let icon = node.icon || typeIcons?.default || '•';
-        
-        // Use expanded/collapsed icons for folders
-        if (nodeType === 'folder' && state.hasChildren) {
-            icon = state.isExpanded ? (typeIcons?.expanded || icon) : (typeIcons?.collapsed || icon);
+        // Type icon (only if showIcons is enabled and we have node types defined)
+        if (this.options.showIcons && this.options.nodeTypes) {
+            const typeIcon = document.createElement('span');
+            typeIcon.className = 'treeview-type-icon';
+            typeIcon.style.marginRight = '4px';
+            typeIcon.style.minWidth = '12px';
+            typeIcon.style.textAlign = 'center';
+            
+            const nodeType = node.type || 'custom';
+            const typeIcons = this.options.nodeTypes[nodeType];
+            let icon = node.icon || typeIcons?.default || '•';
+            
+            // Use expanded/collapsed icons for folders
+            if (nodeType === 'folder' && state.hasChildren) {
+                icon = state.isExpanded ? (typeIcons?.expanded || icon) : (typeIcons?.collapsed || icon);
+            }
+            
+            typeIcon.textContent = icon;
+            container.appendChild(typeIcon);
         }
-        
-        typeIcon.textContent = icon;
-        container.appendChild(typeIcon);
 
         // Label
         const label = document.createElement('span');

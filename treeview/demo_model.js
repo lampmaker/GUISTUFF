@@ -1,6 +1,10 @@
 /**
  * Demo Model Configuration
- * Defines the TreeView setup, node types, toggle definitions, and event callbacks
+ * Defines the TreeView s    // TreeView configuration
+    treeViewConfig: {
+        showIcons: true,
+        multiSelect: true
+    } node types, toggle definitions, and event callbacks
  */
 
 export const demoModel = {
@@ -60,7 +64,7 @@ export const demoModel = {
     // TreeView configuration
     treeViewConfig: {
         showIcons: true,
-        multiSelect: true
+        multiSelect: false
     }
 };
 
