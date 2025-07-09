@@ -177,6 +177,9 @@
         // Initialize
         updateJsonViewer();
         
+        // Debug: Print all paths
+        treeview.debugPaths();
+        
         logEvent(`TreeView demo initialized with <span style="color:#4fc3f7;">enhanced features</span>`);
         logEvent(`Project node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0')}</span>`);
         logEvent(`Components node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0.1')}</span>`);

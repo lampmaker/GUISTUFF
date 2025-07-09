@@ -39,6 +39,7 @@ export const demoContents = [
                 id: 'src',
                 label: 'src',
                 type: 'folder',
+                expanded: true,  // Start expanded to show contents
                 toggles: {
                     locked: false  // Override default
                 },

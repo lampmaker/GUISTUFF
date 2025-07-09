@@ -110,6 +110,7 @@ export class TreeView {
     _renderNodes(nodes, parentElement, path) {
         nodes.forEach((node, index) => {
             const nodePath = path ? `${path}.${index}` : `${index}`;
+            console.log(`Rendering node: ${node.label} at path: ${nodePath}`);
             const nodeElement = this._createNodeElement(node, nodePath);
             parentElement.appendChild(nodeElement);
             
@@ -119,7 +120,9 @@ export class TreeView {
                 Object.assign(childrenContainer.style, TreeView.CONSTANTS.STYLES.CHILDREN);
                 
                 // Simple: just check the node's expanded property directly
-                childrenContainer.style.display = node.expanded ? 'block' : 'none';
+                const isExpanded = node.expanded === true;
+                childrenContainer.style.display = isExpanded ? 'block' : 'none';
+                console.log(`Children container for ${node.label}: expanded=${node.expanded}, isExpanded=${isExpanded}, display = ${childrenContainer.style.display}`);
                 
                 this._renderNodes(node.children, childrenContainer, nodePath);
                 parentElement.appendChild(childrenContainer);
@@ -192,6 +195,8 @@ export class TreeView {
     }
 
     _handleNodeClick(node, path, nodeElement) {
+        console.log(`Node clicked: ${path}, has children: ${node.children && node.children.length > 0}`);
+        
         // Handle expansion/collapse
         if (node.children && node.children.length > 0) {
             this._toggleNode(path);
@@ -226,11 +231,21 @@ export class TreeView {
     }
 
     _toggleNode(path) {
+        console.log(`Toggling node at path: ${path}`);
         const node = this._getNodeByPath(path);
-        if (!node) return;
+        if (!node) {
+            console.warn(`Node not found for path: ${path}`);
+            return;
+        }
+        
+        console.log(`Node found:`, node, `Current expanded: ${node.expanded}`);
         
         // Simple: just flip the expanded property on the node itself
-        node.expanded = !node.expanded;
+        // Handle undefined as false
+        const currentExpanded = node.expanded === true;
+        node.expanded = !currentExpanded;
+        
+        console.log(`New expanded state: ${node.expanded} (was: ${currentExpanded})`);
         
         // Update the UI
         this._render();
@@ -246,13 +261,24 @@ export class TreeView {
         const pathParts = path.split('.').map(Number);
         let current = this.options.data;
         
-        for (const index of pathParts) {
-            if (!current[index]) return null;
-            if (pathParts.indexOf(index) === pathParts.length - 1) {
-                return current[index]; // Last part, return the node
+        for (let i = 0; i < pathParts.length; i++) {
+            const index = pathParts[i];
+            if (!current[index]) {
+                console.warn(`Node not found at path ${path}, failed at index ${index}, step ${i}`);
+                return null;
             }
-            current = current[index].children;
-            if (!current) return null;
+            
+            if (i === pathParts.length - 1) {
+                // Last part, return the node
+                return current[index];
+            } else {
+                // Not the last part, move to children
+                current = current[index].children;
+                if (!current) {
+                    console.warn(`No children found at path ${path}, at index ${index}, step ${i}`);
+                    return null;
+                }
+            }
         }
         return null;
     }
@@ -620,5 +646,23 @@ export class TreeView {
         this.container.remove();
         this.nodeElements.clear();
         this.selectedNodes.clear();
+    }
+
+    /**
+     * Debug method to print all node paths
+     */
+    debugPaths() {
+        console.log('=== TreeView Debug Paths ===');
+        this._debugNodes(this.options.data, '');
+    }
+
+    _debugNodes(nodes, basePath) {
+        nodes.forEach((node, index) => {
+            const path = basePath ? `${basePath}.${index}` : `${index}`;
+            console.log(`Path: ${path}, Label: ${node.label}, Expanded: ${node.expanded}, Has Children: ${node.children ? node.children.length : 0}`);
+            if (node.children) {
+                this._debugNodes(node.children, path);
+            }
+        });
     }
 }
