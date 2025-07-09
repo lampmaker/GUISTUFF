@@ -3,7 +3,7 @@
  * Defines the TreeView node types, toggle definitions, and event callbacks
  */
 
-import { icons } from './icons.js';
+import { icons } from '../treeview/icons.js';
 
 export const demoModel = {
     // Node type definitions with their icons and default toggles
