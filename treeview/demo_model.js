@@ -1,19 +1,17 @@
 /**
  * Demo Model Configuration
- * Defines the TreeView s    // TreeView configuration
-    treeViewConfig: {
-        showIcons: true,
-        multiSelect: true
-    } node types, toggle definitions, and event callbacks
+ * Defines the TreeView node types, toggle definitions, and event callbacks
  */
+
+import { icons } from './icons.js';
 
 export const demoModel = {
     // Node type definitions with their icons and default toggles
     nodeTypes: {
         folder: {
-            expanded: '📁',
-            collapsed: '📂',
-            default: '📁',
+            expanded: icons.folderOpen,
+            collapsed: icons.folder,
+            default: icons.folder,
             allowedChildren: ['folder', 'file', 'component', 'layer', 'custom'],
             defaultToggles: {
                 add: true,      // Folders can add children
@@ -23,7 +21,7 @@ export const demoModel = {
             }
         },
         file: {
-            default: '📄',
+            default: icons.document,
             allowedChildren: ['component', 'layer', 'custom'],
             defaultToggles: {
                 add: false,     // Files typically don't add children
@@ -33,7 +31,7 @@ export const demoModel = {
             }
         },
         component: {
-            default: '🧩',
+            default: icons.component,
             allowedChildren: ['layer', 'custom'],
             defaultToggles: {
                 add: true,      // Components can have child elements
@@ -43,7 +41,7 @@ export const demoModel = {
             }
         },
         layer: {
-            default: '👁️',
+            default: icons.layer,
             allowedChildren: ['custom'],
             defaultToggles: {
                 add: false,     // Layers usually don't add children
@@ -68,33 +66,54 @@ export const demoModel = {
     toggleDefinitions: {
         add:{            
             label: 'Add Child Node',
-            icons:'+',
-            values: [],     //=> callback? how? 
+            icons: icons.plus,
+            values: [],     // Action toggle
+            styles: {
+                default: { color: '#4caf50' }  // Green color for add button
+            }
         },
         visible: {
             label: 'Visibility',
-            icons: { true: '👁️', false: '🙈' },
-            values: [true, false]
+            icons: { true: icons.eye, false: icons.eyeSlash },
+            values: [true, false],
+            styles: {
+                true: { color: '#2196f3' },   // Blue for visible
+                false: { color: '#757575' }   // Gray for hidden
+            }
         },
         enabled: {
             label: 'Enabled',
-            icons: { true: '✅', false: '❌' },
-            values: [true, false]
+            icons: { true: icons.check, false: icons.xMark },
+            values: [true, false],
+            styles: {
+                true: { color: '#4caf50' },   // Green for enabled
+                false: { color: '#f44336' }   // Red for disabled
+            }
         },
         locked: {
             label: 'Locked',
-            icons: { true: '🔒', false: '🔓' },
-            values: [true, false]
+            icons: { true: icons.lock, false: icons.lockOpen },
+            values: [true, false],
+            styles: {
+                true: { color: '#ff9800' },   // Orange for locked
+                false: { color: '#9e9e9e' }   // Gray for unlocked
+            }
         },
         active: {
             label: 'Status',
             icons: { 
-                'running': '▶️', 
-                'paused': '⏸️', 
-                'stopped': '⏹️',
-                'idle': '⏯️'
+                'running': icons.play, 
+                'paused': icons.pause, 
+                'stopped': icons.stop,
+                'idle': icons.pause
             },
-            values: ['running', 'paused', 'stopped', 'idle']
+            values: ['running', 'paused', 'stopped', 'idle'],
+            styles: {
+                'running': { color: '#4caf50' },  // Green for running
+                'paused': { color: '#ff9800' },   // Orange for paused
+                'stopped': { color: '#f44336' },  // Red for stopped
+                'idle': { color: '#607d8b' }      // Blue-gray for idle
+            }
         }
     },
 

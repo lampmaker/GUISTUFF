@@ -20,12 +20,15 @@
  * 
  * @class TreeView
  */
+
+import { icons } from './icons.js';
+
 export class TreeView {
     
     static CONSTANTS = {
         ICONS: {
-            EXPANDED: '▼',
-            COLLAPSED: '▶'
+            EXPANDED: icons.chevronDown,
+            COLLAPSED: icons.chevronRight
         },
         STYLES: {
             CONTAINER: {
@@ -302,21 +305,48 @@ export class TreeView {
         toggle.style.padding = '2px';
         toggle.style.borderRadius = '2px';
         toggle.style.fontSize = '12px';
-        toggle.style.display = 'inline-block';
+        toggle.style.display = 'inline-flex';
+        toggle.style.alignItems = 'center';
+        toggle.style.justifyContent = 'center';
         toggle.style.width = '16px';
-        toggle.style.textAlign = 'center';
+        toggle.style.height = '16px';
+        
+        // Apply custom styles from toggle definition
+        if (toggleDefinition?.style) {
+            Object.assign(toggle.style, toggleDefinition.style);
+        }
         
         // Set the icon content
         if (typeof iconData === 'string' && iconData.trim().startsWith('<svg')) {
             toggle.innerHTML = iconData;
             const svg = toggle.querySelector('svg');
             if (svg) {
-                svg.style.width = '100%';
-                svg.style.height = '100%';
+                svg.style.width = '12px';
+                svg.style.height = '12px';
                 svg.style.display = 'block';
+                
+                // Apply value-specific styles for SVG
+                if (toggleDefinition?.styles && !isActionToggle) {
+                    const valueStyles = toggleDefinition.styles[value];
+                    if (valueStyles) {
+                        Object.assign(svg.style, valueStyles);
+                    }
+                } else if (toggleDefinition?.styles && isActionToggle) {
+                    const actionStyles = toggleDefinition.styles.default || toggleDefinition.styles;
+                    if (actionStyles && typeof actionStyles === 'object') {
+                        Object.assign(svg.style, actionStyles);
+                    }
+                }
             }
         } else {
             toggle.textContent = iconData;
+            // Apply value-specific styles for text icons
+            if (toggleDefinition?.styles && !isActionToggle) {
+                const valueStyles = toggleDefinition.styles[value];
+                if (valueStyles) {
+                    Object.assign(toggle.style, valueStyles);
+                }
+            }
         }
         
         toggle.title = isActionToggle 
@@ -389,7 +419,28 @@ export class TreeView {
                 const toggle = nodeElement.querySelector(`[data-property="${toggleKey}"]`);
                 if (toggle) {
                     if (toggleDefinition && toggleDefinition.icons) {
-                        toggle.textContent = toggleDefinition.icons[newValue] || '?';
+                        const iconData = toggleDefinition.icons[newValue] || '?';
+                        // Handle SVG icons properly
+                        if (typeof iconData === 'string' && iconData.trim().startsWith('<svg')) {
+                            toggle.innerHTML = iconData;
+                            const svg = toggle.querySelector('svg');
+                            if (svg) {
+                                svg.style.width = '12px';
+                                svg.style.height = '12px';
+                                svg.style.display = 'block';
+                                
+                                // Apply value-specific styles for SVG
+                                if (toggleDefinition.styles && toggleDefinition.styles[newValue]) {
+                                    Object.assign(svg.style, toggleDefinition.styles[newValue]);
+                                }
+                            }
+                        } else {
+                            toggle.textContent = iconData;
+                            // Apply value-specific styles for text icons
+                            if (toggleDefinition.styles && toggleDefinition.styles[newValue]) {
+                                Object.assign(toggle.style, toggleDefinition.styles[newValue]);
+                            }
+                        }
                         toggle.title = `${toggleDefinition.label || toggleKey}: ${newValue}`;
                     } else {
                         toggle.textContent = newValue ? '✓' : '✗';
@@ -544,7 +595,22 @@ export class TreeView {
             expandIcon.style.marginRight = '4px';
             expandIcon.style.minWidth = '12px';
             expandIcon.style.textAlign = 'center';
-            expandIcon.textContent = state.isExpanded ? '▼' : '▶';
+            expandIcon.style.display = 'inline-flex';
+            expandIcon.style.alignItems = 'center';
+            expandIcon.style.justifyContent = 'center';
+            
+            const iconSvg = state.isExpanded ? TreeView.CONSTANTS.ICONS.EXPANDED : TreeView.CONSTANTS.ICONS.COLLAPSED;
+            if (iconSvg.includes('<svg')) {
+                expandIcon.innerHTML = iconSvg;
+                const svg = expandIcon.querySelector('svg');
+                if (svg) {
+                    svg.style.width = '12px';
+                    svg.style.height = '12px';
+                    svg.style.display = 'block';
+                }
+            } else {
+                expandIcon.textContent = iconSvg;
+            }
             container.appendChild(expandIcon);
         }
 
@@ -555,6 +621,9 @@ export class TreeView {
             typeIcon.style.marginRight = '4px';
             typeIcon.style.minWidth = '12px';
             typeIcon.style.textAlign = 'center';
+            typeIcon.style.display = 'inline-flex';
+            typeIcon.style.alignItems = 'center';
+            typeIcon.style.justifyContent = 'center';
             
             const nodeType = node.type || 'custom';
             const typeIcons = this.options.nodeTypes[nodeType];
@@ -565,7 +634,17 @@ export class TreeView {
                 icon = state.isExpanded ? (typeIcons?.expanded || icon) : (typeIcons?.collapsed || icon);
             }
             
-            typeIcon.textContent = icon;
+            if (typeof icon === 'string' && icon.includes('<svg')) {
+                typeIcon.innerHTML = icon;
+                const svg = typeIcon.querySelector('svg');
+                if (svg) {
+                    svg.style.width = '12px';
+                    svg.style.height = '12px';
+                    svg.style.display = 'block';
+                }
+            } else {
+                typeIcon.textContent = icon;
+            }
             container.appendChild(typeIcon);
         }
 
