@@ -1,3 +1,6 @@
+// Copyright (c) 2024 Matthijs Keuper
+// SPDX-License-Identifier: MIT
+
 import { Pane } from './tweakpane-4.0.4.js';
 
 /**

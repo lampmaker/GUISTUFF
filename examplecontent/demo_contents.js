@@ -1,3 +1,5 @@
+// Copyright (c) 2024 Matthijs Keuper
+// SPDX-License-Identifier: MIT
 /**
  * Demo Contents
  * Sample data structure for the TreeView demo.

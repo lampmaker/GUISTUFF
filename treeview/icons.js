@@ -1,3 +1,5 @@
+// Copyright (c) 2024 Matthijs Keuper
+// SPDX-License-Identifier: MIT
 /**
  * Icon Registry using Heroicons
  * You can copy SVG strings from https://heroicons.com/ 

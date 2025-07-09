@@ -1,3 +1,5 @@
+// Copyright (c) 2024 Matthijs Keuper
+// SPDX-License-Identifier: MIT
 /**
  * Generic Tree View Component
  * 
@@ -54,6 +56,8 @@ export class TreeView {
         this.draggedPath = null;
         this.dropIndicator = null;
         this.currentDropTarget = null;
+        this.dropPosition = 'inside';
+        this.lastIndicatorElement = null;
 
         this._createContainer();
         this._render();
@@ -944,6 +948,7 @@ export class TreeView {
         if (!event || !event.relatedTarget || !nodeElement.contains(event.relatedTarget)) {
             this._clearDropStyling(nodeElement);
             this._hideDropIndicator();
+            this._hideDropTooltip();
             if (this.currentDropTarget && this.currentDropTarget.path === path) {
                 this.currentDropTarget = null;
             }
@@ -967,12 +972,13 @@ export class TreeView {
             this.options.data,
             this.draggedPath,
             targetPath,
-            this.options.nodeTypes
+            this.options.nodeTypes,
+            this.dropPosition
         );
         
         if (validation.valid) {
             // Perform the move operation
-            moveNode(this.options.data, this.draggedPath, targetPath);
+            moveNode(this.options.data, this.draggedPath, targetPath, this.dropPosition);
             this._render();
             
             // Notify callback
@@ -991,6 +997,7 @@ export class TreeView {
         
         this._clearDropStyling(nodeElement);
         this._hideDropIndicator();
+        this._hideDropTooltip();
     }
 
     /**
@@ -1010,8 +1017,9 @@ export class TreeView {
         this.nodeElements.forEach(element => {
             this._clearDropStyling(element);
         });
-        
+
         this._hideDropIndicator();
+        this._hideDropTooltip();
         this.draggedNode = null;
         this.draggedPath = null;
         this.currentDropTarget = null;
@@ -1057,13 +1065,19 @@ export class TreeView {
         const mouseY = event.clientY;
         const nodeMiddle = rect.top + rect.height / 2;
         
+        this._clearIndicatorSpacing();
         if (mouseY < nodeMiddle) {
             // Show above
             this.dropIndicator.style.top = `${rect.top - 1}px`;
+            nodeElement.style.marginTop = '8px';
+            this.dropPosition = 'before';
         } else {
             // Show below
             this.dropIndicator.style.top = `${rect.bottom + 1}px`;
+            nodeElement.style.marginBottom = '8px';
+            this.dropPosition = 'after';
         }
+        this.lastIndicatorElement = nodeElement;
         
         this.dropIndicator.style.opacity = '1';
     }
@@ -1074,6 +1088,8 @@ export class TreeView {
      */
     _hideDropIndicator() {
         this.dropIndicator.style.opacity = '0';
+        this._clearIndicatorSpacing();
+        this.dropPosition = 'inside';
     }
 
     /**
@@ -1085,6 +1101,17 @@ export class TreeView {
         nodeElement.style.border = '';
         if (!this.selectedNodes.has(nodeElement.dataset.path)) {
             nodeElement.style.backgroundColor = '';
+        }
+        if (nodeElement === this.lastIndicatorElement) {
+            this._clearIndicatorSpacing();
+        }
+    }
+
+    _clearIndicatorSpacing() {
+        if (this.lastIndicatorElement) {
+            this.lastIndicatorElement.style.marginTop = '';
+            this.lastIndicatorElement.style.marginBottom = '';
+            this.lastIndicatorElement = null;
         }
     }
 

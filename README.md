@@ -1,5 +1,8 @@
 # Tweakpane Addons Examples
 
+This project is distributed under the MIT License.
+Copyright (c) 2024 Matthijs Keuper
+
 This repository contains a small collection of experimental UI widgets built on top of [Tweakpane](https://cocopon.github.io/tweakpane/). The code demonstrates how to integrate a property table, tree view, and a flexible split-pane container. A few HTML files in the root folder showcase these components in action.
 
 ## Getting Started
