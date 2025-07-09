@@ -51,29 +51,80 @@ export function removeNodeFromPath(data, path) {
 }
 
 export function moveNode(data, sourcePath, targetPath, position = 'inside') {
+    console.log('moveNode called with:', { sourcePath, targetPath, position });
+    
     const sourceNode = getNodeByPath(data, sourcePath);
-    if (!sourceNode) return false;
+    if (!sourceNode) {
+        console.error('Source node not found at path:', sourcePath);
+        return false;
+    }
+    
+    // Get target references BEFORE removing source (paths may change after removal)
+    const targetNode = getNodeByPath(data, targetPath);
+    if (!targetNode) {
+        console.error('Target node not found at path:', targetPath);
+        return false;
+    }
+    
+    console.log('Source node:', sourceNode.label, 'Target node:', targetNode.label);
 
     const clone = JSON.parse(JSON.stringify(sourceNode));
-    removeNodeFromPath(data, sourcePath);
-
+    
     if (position === 'before' || position === 'after') {
-        const parts = targetPath.split('.');
-        const index = Number(parts.pop());
-        const parentPath = parts.join('.');
+        // For sibling insertion, we need the parent
+        const targetParts = targetPath.split('.');
+        const parentPath = targetParts.slice(0, -1).join('.');
         const parentNode = parentPath ? getNodeByPath(data, parentPath) : { children: data };
-        if (!parentNode || !parentNode.children) return false;
-        let insertIndex = index;
-        if (position === 'after') insertIndex += 1;
+        const targetIndex = Number(targetParts[targetParts.length - 1]);
+        
+        if (!parentNode || !parentNode.children) {
+            console.error('Parent node or children not found');
+            return false;
+        }
+        
+        console.log('Sibling insertion - Parent:', parentNode.label || 'root', 'Target index:', targetIndex);
+        
+        // Remove source node first
+        removeNodeFromPath(data, sourcePath);
+        
+        // Adjust insertion index if needed
+        let insertIndex = targetIndex;
+        if (position === 'after') {
+            insertIndex += 1;
+        }
+        
+        // If source was in same parent and came before target, adjust index
+        const sourceParts = sourcePath.split('.');
+        if (sourceParts.length === targetParts.length && 
+            sourceParts.slice(0, -1).join('.') === parentPath) {
+            const sourceIndex = Number(sourceParts[sourceParts.length - 1]);
+            if (sourceIndex < targetIndex) {
+                insertIndex -= 1;
+            }
+        }
+        
+        // Ensure index is within bounds
+        insertIndex = Math.max(0, Math.min(insertIndex, parentNode.children.length));
+        
+        console.log('Final insertion index:', insertIndex);
         parentNode.children.splice(insertIndex, 0, clone);
-        return true;
+        
+    } else {
+        // Insert as child (inside)
+        console.log('Child insertion into:', targetNode.label);
+        
+        // Remove source node first
+        removeNodeFromPath(data, sourcePath);
+        
+        if (!targetNode.children) {
+            targetNode.children = [];
+        }
+        
+        targetNode.children.push(clone);
+        targetNode.expanded = true; // Expand to show the new child
     }
-
-    const targetNode = getNodeByPath(data, targetPath);
-    if (!targetNode) return false;
-    if (!targetNode.children) targetNode.children = [];
-    targetNode.children.push(clone);
-    targetNode.expanded = true;
+    
+    console.log('Move completed successfully');
     return true;
 }
 

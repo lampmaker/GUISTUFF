@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced TreeView Drag & Drop Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+        
+        .container {
+            max-width: 800px;
+        }
+        
+        h1 {
+            color: #4fc3f7;
+        }
+        
+        .instructions {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .test-area {
+            background-color: #2d2d2d;
+            padding: 20px;
+            border-radius: 4px;
+            min-height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Enhanced TreeView Drag & Drop Test</h1>
+        
+        <div class="instructions">
+            <h3>Test the Enhanced Drag & Drop Features:</h3>
+            <ul>
+                <li><strong>Drag items to folders:</strong> Items should become children, not siblings</li>
+                <li><strong>Drop zones:</strong> 
+                    <ul>
+                        <li>Top 25% of node = Insert BEFORE (green border)</li>
+                        <li>Middle 50% of node = Add as CHILD (blue border, if supported)</li>
+                        <li>Bottom 25% of node = Insert AFTER (green border)</li>
+                    </ul>
+                </li>
+                <li><strong>Visual feedback:</strong> Children should space out when hovering between them</li>
+                <li><strong>Type checking:</strong> Only valid drop targets should show visual feedback</li>
+            </ul>
+        </div>
+        
+        <div class="test-area" id="treeview-container"></div>
+    </div>
+
+    <script type="module">
+        import { TreeView } from './treeview/treeview.js';
+
+        // Simple test data
+        const testData = [
+            {
+                id: 'folder1',
+                label: 'Project Folder',
+                type: 'folder',
+                expanded: true,
+                children: [
+                    { id: 'file1', label: 'index.html', type: 'file' },
+                    { id: 'file2', label: 'styles.css', type: 'file' },
+                    {
+                        id: 'folder2',
+                        label: 'Components',
+                        type: 'folder',
+                        expanded: true,
+                        children: [
+                            { id: 'comp1', label: 'Header Component', type: 'component' },
+                            { id: 'comp2', label: 'Footer Component', type: 'component' }
+                        ]
+                    }
+                ]
+            },
+            {
+                id: 'folder3',
+                label: 'Assets',
+                type: 'folder',
+                children: [
+                    { id: 'img1', label: 'logo.png', type: 'file' },
+                    { id: 'img2', label: 'background.jpg', type: 'file' }
+                ]
+            },
+            { id: 'file3', label: 'README.md', type: 'file' },
+            { id: 'comp3', label: 'Standalone Component', type: 'component' }
+        ];
+
+        // Node types configuration
+        const nodeTypes = {
+            folder: {
+                allowedChildren: ['folder', 'file', 'component'],
+                defaultToggles: { visible: true }
+            },
+            file: {
+                allowedChildren: [],
+                defaultToggles: { visible: true }
+            },
+            component: {
+                allowedChildren: ['file'],
+                defaultToggles: { visible: true }
+            }
+        };
+
+        // Toggle definitions
+        const toggleDefinitions = {
+            visible: {
+                label: 'Visibility',
+                icons: { true: '👁', false: '🙈' },
+                values: [true, false]
+            }
+        };
+
+        // Create the TreeView
+        const treeview = new TreeView({
+            container: document.getElementById('treeview-container'),
+            data: testData,
+            nodeTypes: nodeTypes,
+            toggleDefinitions: toggleDefinitions,
+            toggleOrder: ['visible'],
+            enableDragDrop: true,
+            onNodeDrop: (sourcePath, targetPath, eventType, sourceNode, targetNode, reason) => {
+                console.log('Drag/Drop Event:', {
+                    eventType,
+                    sourcePath,
+                    targetPath,
+                    sourceNode: sourceNode?.label,
+                    targetNode: targetNode?.label,
+                    reason
+                });
+            }
+        });
+
+        // Log the current state
+        console.log('TreeView created with enhanced drag & drop features');
+        console.log('Test data:', testData);
+    </script>
+</body>
+</html>
