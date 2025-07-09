@@ -96,7 +96,7 @@
     <script type="module">
         import { TreeView } from './treeview.js';
         import { SplitPane } from '../splitpane/splitpane.js';
-        import { demoModel, createDemoNodeRenderer, handlePropertyToggle } from './demo_model.js';
+        import { demoModel, demoCallbacks } from './demo_model.js';
         import { demoContents } from './demo_contents.js';
 
         // Use the demo contents
@@ -148,51 +148,22 @@
             });
         }
 
-        // Create the treeview using the generic TreeView with demo configuration
+        // Create the treeview using the TreeView with demo configuration
         const treeview = new TreeView({
             container: split.getPanel(1),
             data: sampleData,
             ...demoModel.treeViewConfig,
-            nodeRenderer: createDemoNodeRenderer(demoModel),
+            toggleDefinitions: demoModel.toggleDefinitions,
+            toggleOrder: demoModel.toggleOrder,
+            nodeTypes: demoModel.nodeTypes,
             onSelectionChange: (selectedPaths, node) => {
-                logEvent(`<span style="color:#4fc3f7;">Selection:</span> ${selectedPaths.join(', ')} | <span style="color:#ffeb3b;">Node:</span> ${node.label}`);
+                demoCallbacks.onSelectionChange(selectedPaths, node, logEvent);
             },
             onNodeExpand: (path, expanded) => {
-                logEvent(`<span style="color:#4caf50;">Node:</span> ${expanded ? 'expanded' : 'collapsed'} → ${path}`);
-            }
-        });
-
-        // Add toggle click handlers
-        split.getPanel(1).addEventListener('click', (e) => {
-            if (e.target.classList.contains('treeview-property-toggle')) {
-                e.stopPropagation();
-                const path = e.target.closest('[data-path]').dataset.path;
-                const property = e.target.dataset.property;
-                
-                // Find the node using the path
-                function findNodeByPath(nodes, targetPath) {
-                    if (!targetPath) return nodes[0]; // root case
-                    const pathParts = targetPath.split('.');
-                    let current = nodes;
-                    
-                    for (const part of pathParts) {
-                        const index = parseInt(part);
-                        current = current[index];
-                        if (pathParts[pathParts.length - 1] !== part && current.children) {
-                            current = current.children;
-                        }
-                    }
-                    return current;
-                }
-                
-                const node = findNodeByPath(sampleData, path);
-                handlePropertyToggle(node, path, property, demoModel, 
-                    (path, property, newValue, oldValue, node) => {
-                        logEvent(`<span style="color:#ff9800;">Toggle:</span> '${property}' ${oldValue} → ${newValue} for '${node.label}' (${path})`);
-                        updateJsonViewer();
-                    }, 
-                    treeview.nodeElements
-                );
+                demoCallbacks.onNodeExpand(path, expanded, logEvent);
+            },
+            onToggleClick: (path, property, newValue, oldValue, node) => {
+                demoCallbacks.onToggleClick(path, property, newValue, oldValue, node, logEvent, updateJsonViewer);
             }
         });
 
