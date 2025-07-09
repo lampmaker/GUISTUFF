@@ -38,7 +38,8 @@ class PropertyTable extends Pane {
             NUMBER_MIN: 0,
             NUMBER_MAX: 100,
             TYPE_VALUES: ["text here", 0.0, { x: 0, y: 0 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 0 }, false],
-            TYPE_OPTIONS: { string: 0, float: 1, vec2: 2, vec3: 3, vec4: 4, boolean: 5 }
+            TYPE_OPTIONS: { string: 0, float: 1, vec2: 2, vec3: 3, vec4: 4, boolean: 5 },
+            SCROLLBARS: true
         },
         OPACITY: {
             HOVER: '1',
@@ -79,6 +80,9 @@ class PropertyTable extends Pane {
                 if (options.multiline) {
                     options.readonly = true; // force to switch log control (which uses textarea)  for multiline strings
                     options.wordwrap = true;
+                    if (options.scrollbars === undefined) {
+                        options.scrollbars = PropertyTable.CONSTANTS.DEFAULT_VALUES.SCROLLBARS;
+                    }
                 }
                 break;
             }
@@ -108,7 +112,10 @@ class PropertyTable extends Pane {
                             
                             const textarea = element?.querySelector('textarea');
                             if (textarea) {
+                                textarea.readOnly = false;
                                 setTextareaStyle(textarea, options);
+                                const ticker = binding.controller?.value?.ticker;
+                                ticker?.dispose?.();
                                 textarea.addEventListener('input', (e) => target[property] = e.target.value);
                                 binding.update = () => setTextareaStyle(textarea, options);
                             }

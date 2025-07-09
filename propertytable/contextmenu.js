@@ -319,6 +319,8 @@ function _addStringControls(pane, binding, options) {
     if (options.multiline) {
         pane.addBinding(options, "wordwrap", { label: 'Word Wrap' })
             .on('change', () => binding.update());
+        pane.addBinding(options, "scrollbars", { label: 'Scrollbars' })
+            .on('change', () => binding.update());
     }
 }
 
