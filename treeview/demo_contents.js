@@ -91,6 +91,8 @@ export const demoContents = [
                 id: 'assets',
                 label: 'assets',
                 type: 'folder',
+                // Override allowed children - this folder can only contain files
+                allowedChildren: ['file'],
                 // toggles inherit from folder type defaults
                 children: [
                     {
@@ -124,6 +126,8 @@ export const demoContents = [
                         id: 'ui',
                         label: 'UI Layer',
                         type: 'layer',
+                        // Override allowed children - this layer can contain components and other layers
+                        allowedChildren: ['component', 'layer'],
                         toggles: {
                             visible: false,    // Override default
                             locked: true,      // Override default
@@ -134,6 +138,8 @@ export const demoContents = [
                         id: 'effects',
                         label: 'Effects Layer',
                         type: 'layer',
+                        // No children allowed for this specific layer
+                        allowedChildren: [],
                         toggles: {
                             enabled: false,      // Override default
                             active: 'stopped'   // Already matches default

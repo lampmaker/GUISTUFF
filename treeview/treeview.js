@@ -91,6 +91,16 @@ export class TreeView {
         this.onSelectionChange = options.onSelectionChange || (() => {});
         this.onNodeExpand = options.onNodeExpand || (() => {});
         this.onToggleClick = options.onToggleClick || (() => {});
+        this.onNodeMove = options.onNodeMove || (() => {});
+
+        // Drag & drop state
+        this.dragState = {
+            isDragging: false,
+            draggedNode: null,
+            draggedPath: null,
+            dropTarget: null,
+            dropIndicator: null
+        };
 
         this._createContainer();
         this._render();
@@ -437,11 +447,6 @@ export class TreeView {
                             toggle.innerHTML = iconData;
                             const svg = toggle.querySelector('svg');
                             if (svg) {
-                                svg.style.width = '12px';
-                                svg.style.height = '12px';
-                                svg.style.display = 'block';
-                                
-                                // Apply value-specific styles for SVG
                                 if (toggleDefinition.styles && toggleDefinition.styles[newValue]) {
                                     Object.assign(svg.style, toggleDefinition.styles[newValue]);
                                 }
@@ -474,10 +479,11 @@ export class TreeView {
      */
     _handleAddChildNode(node, path) {
         const nodeType = node.type || 'custom';
-        const allowedChildren = this.options.nodeTypes[nodeType]?.allowedChildren || [];
+        // Check if node has its own allowedChildren override, otherwise use node type default
+        const allowedChildren = node.allowedChildren || this.options.nodeTypes[nodeType]?.allowedChildren || [];
         
         if (allowedChildren.length === 0) {
-            console.warn(`No allowed child types for node type '${nodeType}'`);
+            console.warn(`No allowed child types for node '${node.label}' (type: ${nodeType})`);
             return;
         }
         

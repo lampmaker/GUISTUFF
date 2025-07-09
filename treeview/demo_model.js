@@ -35,7 +35,7 @@ export const demoModel = {
         },
         file: {
             default: icons.document,
-            allowedChildren: ['component', 'layer', 'custom'],
+            allowedChildren: [],
             defaultToggles: {
                 add: false,     // Files typically don't add children
                 visible: true,
