@@ -149,8 +149,10 @@ class PropertyTable extends Pane {
         const folder = super.addFolder(params);
 
         this._enhanceFolderWithBindings(folder);
-        
-        if (params?.expandable && params?.object) {
+        if(params?.object)folder.bindControls(params.object, params.options || {});
+
+        //if (params?.expandable && params?.object) {
+        if (params?.expandable) {
             this._makeExpandableFolder(folder, params);
         }
         
@@ -180,7 +182,7 @@ class PropertyTable extends Pane {
     //========================================================================================================================================
     // Make folder expandable with add/remove functionality
     _makeExpandableFolder(folder, params) {
-        folder.bindControls(params.object, params.options || {});
+//        folder.bindControls(params.object, params.options || {});
         this._addElementCreator(folder);
         this._addPlusButton(folder);
         this._setupFolderRefresh(folder);
