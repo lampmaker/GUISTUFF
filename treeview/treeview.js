@@ -260,7 +260,7 @@ export class TreeView {
      */
     _createPropertyToggle(node, path, toggleKey, toggleDefinition, onToggleClick) {
         const isActionToggle = !toggleDefinition?.values || toggleDefinition.values.length === 0;
-        const value = isActionToggle ? null : node.toggles[toggleKey];
+        const value = isActionToggle ? null : this._getToggleValue(node, toggleKey);
         let iconData = '?';
         
         if (toggleDefinition && toggleDefinition.icons) {
@@ -340,8 +340,13 @@ export class TreeView {
         }
         
         // Regular toggle - cycle through values
-        if (node.toggles && toggleKey in node.toggles) {
-            const oldValue = node.toggles[toggleKey];
+        if (this._shouldShowToggle(node, toggleKey) && !isActionToggle) {
+            // Ensure node.toggles exists
+            if (!node.toggles) {
+                node.toggles = {};
+            }
+            
+            const oldValue = this._getToggleValue(node, toggleKey);
             let newValue;
             
             if (toggleDefinition && toggleDefinition.values && toggleDefinition.values.length > 0) {
@@ -441,15 +446,13 @@ export class TreeView {
                 toggleColumn.style.textAlign = 'center';
                 toggleColumn.style.display = 'inline-block';
                 
-                // Check if this node uses this toggle OR if it's an action toggle
-                const toggleDef = this.options.toggleDefinitions[toggleKey];
-                const isActionToggle = !toggleDef?.values || toggleDef.values.length === 0;
-                
-                if ((node.toggles && toggleKey in node.toggles) || isActionToggle) {
+                // Check if this toggle should be visible for this node
+                if (this._shouldShowToggle(node, toggleKey)) {
+                    const toggleDef = this.options.toggleDefinitions[toggleKey];
                     const toggle = this._createPropertyToggle(node, path, toggleKey, toggleDef, this.onToggleClick);
                     toggleColumn.appendChild(toggle);
                 }
-                // If node doesn't use this toggle, leave the column empty for alignment
+                // If toggle shouldn't be shown, leave the column empty for alignment
                 
                 togglesContainer.appendChild(toggleColumn);
             });
@@ -458,6 +461,66 @@ export class TreeView {
         }
 
         return container;
+    }
+
+    /**
+     * Check if a toggle should be visible for a given node
+     * @private
+     */
+    _shouldShowToggle(node, toggleKey) {
+        // Check if node explicitly hides this toggle with null
+        if (node.toggles && toggleKey in node.toggles && node.toggles[toggleKey] === null) {
+            return false; // Explicitly hidden
+        }
+        
+        // Check if node has explicit toggle visibility override
+        if (node.toggles && toggleKey in node.toggles && node.toggles[toggleKey] !== null) {
+            return true; // Node explicitly defines this toggle
+        }
+        
+        // Check node type defaults
+        const nodeType = node.type || 'custom';
+        const typeDefinition = this.options.nodeTypes[nodeType];
+        if (typeDefinition && typeDefinition.defaultToggles && toggleKey in typeDefinition.defaultToggles) {
+            // For action toggles, check if the default value is truthy
+            const toggleDef = this.options.toggleDefinitions[toggleKey];
+            const isActionToggle = !toggleDef?.values || toggleDef.values.length === 0;
+            
+            if (isActionToggle) {
+                return typeDefinition.defaultToggles[toggleKey] === true;
+            } else {
+                return true; // Regular toggles are shown if they're in defaultToggles
+            }
+        }
+        
+        // Default: don't show toggle
+        return false;
+    }
+
+    /**
+     * Get the effective toggle value for a node (considering defaults)
+     * @private
+     */
+    _getToggleValue(node, toggleKey) {
+        // Check if node has explicit value (but not null, which means hidden)
+        if (node.toggles && toggleKey in node.toggles && node.toggles[toggleKey] !== null) {
+            return node.toggles[toggleKey];
+        }
+        
+        // Use node type default
+        const nodeType = node.type || 'custom';
+        const typeDefinition = this.options.nodeTypes[nodeType];
+        if (typeDefinition && typeDefinition.defaultToggles && toggleKey in typeDefinition.defaultToggles) {
+            return typeDefinition.defaultToggles[toggleKey];
+        }
+        
+        // Fallback defaults
+        const toggleDef = this.options.toggleDefinitions[toggleKey];
+        if (toggleDef && toggleDef.values && toggleDef.values.length > 0) {
+            return toggleDef.values[0]; // First value as default
+        }
+        
+        return false; // Boolean default
     }
 
     // Public API methods

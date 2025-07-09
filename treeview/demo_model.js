@@ -8,30 +8,59 @@
  */
 
 export const demoModel = {
-    // Node type definitions with their icons
+    // Node type definitions with their icons and default toggles
     nodeTypes: {
         folder: {
             expanded: '📁',
             collapsed: '📂',
             default: '📁',
-            allowedChildren: ['folder', 'file', 'component', 'layer', 'custom'] 
+            allowedChildren: ['folder', 'file', 'component', 'layer', 'custom'],
+            defaultToggles: {
+                add: true,      // Folders can add children
+                visible: true,
+                enabled: true,
+                locked: false
+            }
         },
         file: {
             default: '📄',
-            allowedChildren: ['component', 'layer', 'custom']
-
+            allowedChildren: ['component', 'layer', 'custom'],
+            defaultToggles: {
+                add: false,     // Files typically don't add children
+                visible: true,
+                enabled: true,
+                locked: false
+            }
         },
         component: {
             default: '🧩',
-            allowedChildren: ['layer', 'custom']
+            allowedChildren: ['layer', 'custom'],
+            defaultToggles: {
+                add: true,      // Components can have child elements
+                visible: true,
+                enabled: true,
+                active: 'idle'
+            }
         },
         layer: {
             default: '👁️',
-            allowedChildren: ['custom']
+            allowedChildren: ['custom'],
+            defaultToggles: {
+                add: false,     // Layers usually don't add children
+                visible: true,
+                enabled: true,
+                locked: false,
+                active: 'stopped'
+            }
         },
         custom: {
             default: '•',
-            allowedChildren: [] // Custom nodes can have any children
+            allowedChildren: [], // Custom nodes can have any children
+            defaultToggles: {
+                add: true,      // Custom nodes are flexible
+                visible: true,
+                enabled: true
+            }
         }
     },
 
