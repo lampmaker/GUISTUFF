@@ -1,4 +1,5 @@
 /*! Tweakpane 4.0.4 (c) 2016 cocopon, licensed under the MIT license. */
+// Modified by Matthijs Keuper - MIT License
 function forceCast(v) {
     return v;
 }

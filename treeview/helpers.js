@@ -1,3 +1,6 @@
+// Copyright (c) 2024 Matthijs Keuper
+// SPDX-License-Identifier: MIT
+
 export function getNodeByPath(data, path) {
     if (typeof path !== 'string') return null;
     const parts = path.split('.').map(Number);
@@ -47,12 +50,24 @@ export function removeNodeFromPath(data, path) {
     }
 }
 
-export function moveNode(data, sourcePath, targetPath) {
+export function moveNode(data, sourcePath, targetPath, position = 'inside') {
     const sourceNode = getNodeByPath(data, sourcePath);
     if (!sourceNode) return false;
 
     const clone = JSON.parse(JSON.stringify(sourceNode));
     removeNodeFromPath(data, sourcePath);
+
+    if (position === 'before' || position === 'after') {
+        const parts = targetPath.split('.');
+        const index = Number(parts.pop());
+        const parentPath = parts.join('.');
+        const parentNode = parentPath ? getNodeByPath(data, parentPath) : { children: data };
+        if (!parentNode || !parentNode.children) return false;
+        let insertIndex = index;
+        if (position === 'after') insertIndex += 1;
+        parentNode.children.splice(insertIndex, 0, clone);
+        return true;
+    }
 
     const targetNode = getNodeByPath(data, targetPath);
     if (!targetNode) return false;
@@ -79,7 +94,7 @@ export function canNodeAcceptChild(parentNode, childNode, nodeTypes, draggedPath
     return allowedChildren.includes(childType);
 }
 
-export function validateDragDropOperation(data, sourcePath, targetPath, nodeTypes) {
+export function validateDragDropOperation(data, sourcePath, targetPath, nodeTypes, position = 'inside') {
     if (!sourcePath || !targetPath || sourcePath === targetPath) {
         return { valid: false, reason: 'Invalid source or target path' };
     }
@@ -95,14 +110,21 @@ export function validateDragDropOperation(data, sourcePath, targetPath, nodeType
     const sourceNode = getNodeByPath(data, sourcePath);
     const targetNode = getNodeByPath(data, targetPath);
 
-    if (!sourceNode || !targetNode) {
+    let dropTarget = targetNode;
+    if (position === 'before' || position === 'after') {
+        const parentParts = targetPath.split('.').slice(0, -1);
+        const parentPath = parentParts.join('.');
+        dropTarget = parentParts.length ? getNodeByPath(data, parentPath) : { children: data, type: 'root' };
+    }
+
+    if (!sourceNode || !targetNode || !dropTarget) {
         return { valid: false, reason: 'Source or target node not found' };
     }
 
-    if (!canNodeAcceptChild(targetNode, sourceNode, nodeTypes)) {
+    if (!canNodeAcceptChild(dropTarget, sourceNode, nodeTypes)) {
         const sourceType = sourceNode.type || 'custom';
-        const targetType = targetNode.type || 'custom';
-        const allowedChildren = targetNode.allowedChildren || nodeTypes[targetType]?.allowedChildren || [];
+        const targetType = dropTarget.type || 'custom';
+        const allowedChildren = dropTarget.allowedChildren || nodeTypes[targetType]?.allowedChildren || [];
         return { valid: false, reason: `Node type '${targetType}' cannot accept children of type '${sourceType}'. Allowed: [${allowedChildren.join(', ')}]` };
     }
 

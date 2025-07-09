@@ -1,3 +1,5 @@
+// Copyright (c) 2024 Matthijs Keuper
+// SPDX-License-Identifier: MIT
 /**
  * Demo Model Configuration
  * Defines the TreeView node types, toggle definitions, and event callbacks

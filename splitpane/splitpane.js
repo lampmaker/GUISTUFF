@@ -1,3 +1,5 @@
+// Copyright (c) 2024 Matthijs Keuper
+// SPDX-License-Identifier: MIT
 /**
  * Simple SplitPane Container
  * A minimal, easy-to-use splitpane implementation
