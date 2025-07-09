@@ -21,68 +21,12 @@
  * @class TreeView
  */
 
-import { icons } from './icons.js';
+import { ICONS, STYLES } from './constants.js';
+import { getNodeByPath, debugNodes, moveNode, validateDragDropOperation, canNodeAcceptChild } from './helpers.js';
 
 export class TreeView {
-    
-    static CONSTANTS = {
-        ICONS: {
-            EXPANDED: icons.chevronDown,
-            COLLAPSED: icons.chevronRight
-        },
-        STYLES: {
-            CONTAINER: {
-                fontFamily: 'monospace',
-                fontSize: '14px',
-                lineHeight: '1.4',
-                color: '#e0e0e0',
-                backgroundColor: '#2d2d2d',
-                padding: '8px',
-                height: '100%',
-                overflow: 'auto',
-                boxSizing: 'border-box',
-                // Prevent nested scrollbar issues
-                position: 'relative'
-            },
-            NODE: {
-                cursor: 'pointer',
-                padding: '2px 4px',
-                borderRadius: '3px',
-                userSelect: 'none',
-                whiteSpace: 'nowrap'
-            },
-            NODE_HOVER: {
-                backgroundColor: '#404040'
-            },
-            NODE_SELECTED: {
-                backgroundColor: '#007acc',
-                color: '#ffffff'
-            },
-            NODE_CONTENT: {
-                display: 'flex',
-                alignItems: 'center'
-            },
-            ICON: {
-                marginRight: '4px',
-                minWidth: '12px',
-                textAlign: 'center'
-            },
-            CHILDREN: {
-                marginLeft: '16px'
-            },
-            DROP_INDICATOR: {
-                position: 'absolute',
-                height: '2px',
-                backgroundColor: '#007acc',
-                borderRadius: '1px',
-                boxShadow: '0 0 4px rgba(0, 122, 204, 0.5)',
-                zIndex: '1000',
-                pointerEvents: 'none',
-                opacity: '0',
-                transition: 'opacity 0.2s ease'
-            }
-        }
-    };
+
+    static CONSTANTS = { ICONS, STYLES };
 
     constructor(options = {}) {
         this.options = {
@@ -133,17 +77,7 @@ export class TreeView {
     _createDropIndicator() {
         this.dropIndicator = document.createElement('div');
         this.dropIndicator.className = 'treeview-drop-indicator';
-        this.dropIndicator.style.cssText = `
-            position: absolute;
-            height: 2px;
-            background-color: #007acc;
-            border-radius: 1px;
-            box-shadow: 0 0 4px rgba(0, 122, 204, 0.5);
-            z-index: 1000;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        `;
+        Object.assign(this.dropIndicator.style, TreeView.CONSTANTS.STYLES.DROP_INDICATOR);
         document.body.appendChild(this.dropIndicator);
     }
 
@@ -315,7 +249,7 @@ export class TreeView {
     }
 
     _toggleNode(path) {
-        const node = this._getNodeByPath(path);
+        const node = getNodeByPath(this.options.data, path);
         if (!node) {
             return;
         }
@@ -331,34 +265,7 @@ export class TreeView {
         this.onNodeExpand(path, node.expanded);
     }
 
-    /**
-     * Get a node by its path
-     * @private
-     */
-    _getNodeByPath(path) {
-        if (typeof path !== 'string') return null;
-        const pathParts = path.split('.').map(Number);
-        let current = this.options.data;
-        
-        for (let i = 0; i < pathParts.length; i++) {
-            const index = pathParts[i];
-            if (!current[index]) {
-                return null;
-            }
-            
-            if (i === pathParts.length - 1) {
-                // Last part, return the node
-                return current[index];
-            } else {
-                // Not the last part, move to children
-                current = current[index].children;
-                if (!current) {
-                    return null;
-                }
-            }
-        }
-        return null;
-    }
+
 
     /**
      * Creates a property toggle element
@@ -896,7 +803,7 @@ export class TreeView {
      * @param {boolean} expanded - Whether to expand or collapse
      */
     setNodeExpanded(path, expanded) {
-        const node = this._getNodeByPath(path);
+        const node = getNodeByPath(this.options.data, path);
         if (node && node.expanded !== expanded) {
             node.expanded = expanded;
             this._render();
@@ -910,7 +817,7 @@ export class TreeView {
      * @returns {boolean} True if the node is expanded, false otherwise
      */
     isNodeExpanded(path) {
-        const node = this._getNodeByPath(path);
+        const node = getNodeByPath(this.options.data, path);
         return node ? (node.expanded || false) : false;
     }
 
@@ -922,15 +829,6 @@ export class TreeView {
         return this.options.data;
     }
 
-    _visitAllNodes(nodes, basePath, callback) {
-        nodes.forEach((node, index) => {
-            const path = basePath ? `${basePath}.${index}` : `${index}`;
-            callback(node, path);
-            if (node.children) {
-                this._visitAllNodes(node.children, path, callback);
-            }
-        });
-    }
 
     /**
      * Destroy the tree view and clean up
@@ -950,17 +848,7 @@ export class TreeView {
      */
     debugPaths() {
         console.log('=== TreeView Debug Paths ===');
-        this._debugNodes(this.options.data, '');
-    }
-
-    _debugNodes(nodes, basePath) {
-        nodes.forEach((node, index) => {
-            const path = basePath ? `${basePath}.${index}` : `${index}`;
-            console.log(`Path: ${path}, Label: ${node.label}, Expanded: ${node.expanded}, Has Children: ${node.children ? node.children.length : 0}`);
-            if (node.children) {
-                this._debugNodes(node.children, path);
-            }
-        });
+        debugNodes(this.options.data);
     }
 
     // Drag and drop handling
@@ -997,7 +885,13 @@ export class TreeView {
         }
         
         // Check if this node can accept the dragged node
-        const canDrop = this._canNodeAcceptChild(node, this.draggedNode);
+        const canDrop = canNodeAcceptChild(
+            node,
+            this.draggedNode,
+            this.options.nodeTypes,
+            this.draggedPath,
+            path
+        );
         
         if (canDrop) {
             event.preventDefault();
@@ -1018,7 +912,13 @@ export class TreeView {
         }
         
         this.currentDropTarget = { node, path, element: nodeElement };
-        const canDrop = this._canNodeAcceptChild(node, this.draggedNode);
+        const canDrop = canNodeAcceptChild(
+            node,
+            this.draggedNode,
+            this.options.nodeTypes,
+            this.draggedPath,
+            path
+        );
         
         if (canDrop) {
             nodeElement.classList.add('drag-over-valid');
@@ -1063,11 +963,17 @@ export class TreeView {
         }
         
         // Validate the drop operation
-        const validation = this._validateDragDropOperation(this.draggedPath, targetPath);
+        const validation = validateDragDropOperation(
+            this.options.data,
+            this.draggedPath,
+            targetPath,
+            this.options.nodeTypes
+        );
         
         if (validation.valid) {
             // Perform the move operation
-            this._moveNode(this.draggedPath, targetPath);
+            moveNode(this.options.data, this.draggedPath, targetPath);
+            this._render();
             
             // Notify callback
             if (this.onNodeDrop) {
@@ -1114,37 +1020,6 @@ export class TreeView {
         if (this.onNodeDrop) {
             this.onNodeDrop(null, null, 'dragend');
         }
-    }
-
-    /**
-     * Check if a node can accept another node as a child
-     * @private
-     */
-    _canNodeAcceptChild(parentNode, childNode) {
-        if (!parentNode || !childNode) return false;
-        
-        // Prevent dropping a node into itself
-        if (this.draggedPath && this.currentDropTarget?.path === this.draggedPath) {
-            return false;
-        }
-        
-        // Prevent dropping a node into its own descendant
-        if (this.draggedPath && this.currentDropTarget?.path.startsWith(this.draggedPath + '.')) {
-            return false;
-        }
-        
-        // Check if parent can accept children at all
-        const parentType = parentNode.type || 'custom';
-        const parentTypeDefinition = this.options.nodeTypes[parentType];
-        const allowedChildren = parentNode.allowedChildren || parentTypeDefinition?.allowedChildren || [];
-        
-        if (allowedChildren.length === 0) {
-            return false;
-        }
-        
-        // Check if child type is allowed
-        const childType = childNode.type || 'custom';
-        return allowedChildren.includes(childType);
     }
 
     /**
@@ -1213,100 +1088,6 @@ export class TreeView {
         }
     }
 
-    /**
-     * Move a node from one path to another
-     * @private
-     */
-    _moveNode(sourcePath, targetPath) {
-        // Get the source node and remove it from its current location
-        const sourceNode = this._getNodeByPath(sourcePath);
-        if (!sourceNode) return;
-        
-        // Create a deep copy of the source node to avoid reference issues
-        const nodeClone = JSON.parse(JSON.stringify(sourceNode));
-        
-        // Remove from source location
-        this._removeNodeFromPath(sourcePath);
-        
-        // Add to target location
-        const targetNode = this._getNodeByPath(targetPath);
-        if (targetNode) {
-            if (!targetNode.children) {
-                targetNode.children = [];
-            }
-            targetNode.children.push(nodeClone);
-            targetNode.expanded = true; // Expand to show the moved node
-        }
-        
-        // Re-render the tree
-        this._render();
-    }
-
-    /**
-     * Remove a node from its current path
-     * @private
-     */
-    _removeNodeFromPath(path) {
-        const pathParts = path.split('.').map(Number);
-        
-        if (pathParts.length === 1) {
-            // Root level node
-            this.options.data.splice(pathParts[0], 1);
-        } else {
-            // Child node - find parent and remove from children
-            const parentPath = pathParts.slice(0, -1).join('.');
-            const parentNode = this._getNodeByPath(parentPath);
-            const childIndex = pathParts[pathParts.length - 1];
-            
-            if (parentNode && parentNode.children) {
-                parentNode.children.splice(childIndex, 1);
-            }
-        }
-    }
-
-    /**
-     * Validate a drag and drop operation before performing it
-     * @private
-     */
-    _validateDragDropOperation(sourcePath, targetPath) {
-        // Check if source and target are valid
-        if (!sourcePath || !targetPath || sourcePath === targetPath) {
-            return { valid: false, reason: 'Invalid source or target path' };
-        }
-        
-        // Prevent dropping into self
-        if (targetPath === sourcePath) {
-            return { valid: false, reason: 'Cannot drop node into itself' };
-        }
-        
-        // Prevent dropping into own descendant
-        if (targetPath.startsWith(sourcePath + '.')) {
-            return { valid: false, reason: 'Cannot drop node into its own descendant' };
-        }
-        
-        // Check if nodes exist
-        const sourceNode = this._getNodeByPath(sourcePath);
-        const targetNode = this._getNodeByPath(targetPath);
-        
-        if (!sourceNode || !targetNode) {
-            return { valid: false, reason: 'Source or target node not found' };
-        }
-        
-        // Check if target can accept source
-        if (!this._canNodeAcceptChild(targetNode, sourceNode)) {
-            const sourceType = sourceNode.type || 'custom';
-            const targetType = targetNode.type || 'custom';
-            const allowedChildren = targetNode.allowedChildren || 
-                this.options.nodeTypes[targetType]?.allowedChildren || [];
-            
-            return { 
-                valid: false, 
-                reason: `Node type '${targetType}' cannot accept children of type '${sourceType}'. Allowed: [${allowedChildren.join(', ')}]`
-            };
-        }
-        
-        return { valid: true, reason: null };
-    }
 
     /**
      * Show tooltip indicating what types can be dropped on this node
