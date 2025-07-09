@@ -1,37 +1,21 @@
 /**
- * Comprehensive Tree View Component
+ * Generic Tree View Component
  * 
  * Features:
- * - Hierarchical data display with multiple node types
+ * - Hierarchical data display
  * - Expandable/collapsible nodes
  * - Selection support (single/multi)
- * - Toggleable node properties (visible, enabled, etc.)
- * - Custom icons and styling per node type
+ * - Customizable node rendering
  * - Event handling for selection and expansion
  * 
  * Node Structure:
  * {
- *   id: string,              // Unique identifier for the node
- *   label: string,           // Display text for the node
- *   type: string,            // Node type (determines icons, behavior)
- *   children?: Array,        // Child nodes (optional)
- *   data?: any,             // Custom data associated with the node
- *   properties?: {          // Toggleable properties
- *     visible?: boolean,
- *     enabled?: boolean,
- *     locked?: boolean,
- *     // ... custom properties based on node type
- *   },
- *   icon?: string,          // Custom icon override
- *   tooltip?: string        // Tooltip text
+ *   id?: string,            // Optional unique identifier
+ *   label: string,          // Display text for the node
+ *   children?: Array,       // Child nodes (optional)
+ *   data?: any,            // Custom data associated with the node
+ *   [key: string]: any     // Any additional properties
  * }
- * 
- * Node Types:
- * - 'folder': Container nodes with children
- * - 'file': Leaf nodes without children
- * - 'component': Special nodes representing UI components
- * - 'layer': Visual layer nodes with visibility toggles
- * - 'custom': User-defined node types
  * 
  * @class TreeView
  */
@@ -40,48 +24,7 @@ export class TreeView {
     static CONSTANTS = {
         ICONS: {
             EXPANDED: '▼',
-            COLLAPSED: '▶',
-            LEAF: '•'
-        },
-        NODE_TYPES: {
-            FOLDER: 'folder',
-            FILE: 'file',
-            COMPONENT: 'component',
-            LAYER: 'layer',
-            CUSTOM: 'custom'
-        },
-        TYPE_ICONS: {
-            folder: {
-                expanded: '📁',
-                collapsed: '📂',
-                default: '📁'
-            },
-            file: {
-                default: '📄'
-            },
-            component: {
-                default: '🧩'
-            },
-            layer: {
-                default: '👁️'
-            },
-            custom: {
-                default: '•'
-            }
-        },
-        PROPERTY_ICONS: {
-            visible: {
-                true: '👁️',
-                false: '🙈'
-            },
-            enabled: {
-                true: '✅',
-                false: '❌'
-            },
-            locked: {
-                true: '🔒',
-                false: '🔓'
-            }
+            COLLAPSED: '▶'
         },
         STYLES: {
             CONTAINER: {
@@ -131,10 +74,8 @@ export class TreeView {
             container: options.container || document.body,
             data: options.data || [],
             showIcons: options.showIcons !== false,
-            showTypeIcons: options.showTypeIcons !== false,
-            showPropertyToggles: options.showPropertyToggles || [],
             multiSelect: options.multiSelect || false,
-            nodeTypes: options.nodeTypes || {},
+            nodeRenderer: options.nodeRenderer || null,
             ...options
         };
 
@@ -143,7 +84,6 @@ export class TreeView {
         this.nodeElements = new Map();
         this.onSelectionChange = options.onSelectionChange || (() => {});
         this.onNodeExpand = options.onNodeExpand || (() => {});
-        this.onPropertyToggle = options.onPropertyToggle || (() => {});
 
         this._createContainer();
         this._render();
@@ -187,77 +127,51 @@ export class TreeView {
         const nodeDiv = document.createElement('div');
         nodeDiv.className = 'treeview-node';
         nodeDiv.dataset.path = path;
-        nodeDiv.dataset.nodeType = node.type || TreeView.CONSTANTS.NODE_TYPES.CUSTOM;
         Object.assign(nodeDiv.style, TreeView.CONSTANTS.STYLES.NODE);
         
         const contentDiv = document.createElement('div');
         Object.assign(contentDiv.style, TreeView.CONSTANTS.STYLES.NODE_CONTENT);
         
-        // Expansion icon (for nodes with children)
-        if (this.options.showIcons && node.children && node.children.length > 0) {
-            const expandIcon = document.createElement('span');
-            expandIcon.className = 'treeview-expand-icon';
-            Object.assign(expandIcon.style, TreeView.CONSTANTS.STYLES.ICON);
-            
-            const isExpanded = this.expandedNodes.has(path);
-            expandIcon.textContent = isExpanded 
-                ? TreeView.CONSTANTS.ICONS.EXPANDED 
-                : TreeView.CONSTANTS.ICONS.COLLAPSED;
-            contentDiv.appendChild(expandIcon);
-        }
-        
-        // Type icon
-        if (this.options.showTypeIcons) {
-            const typeIcon = document.createElement('span');
-            typeIcon.className = 'treeview-type-icon';
-            Object.assign(typeIcon.style, TreeView.CONSTANTS.STYLES.ICON);
-            
-            const nodeType = node.type || TreeView.CONSTANTS.NODE_TYPES.CUSTOM;
-            const typeIcons = TreeView.CONSTANTS.TYPE_ICONS[nodeType];
-            let icon = node.icon || typeIcons?.default || '•';
-            
-            // Use expanded/collapsed icons for folders if available
-            if (nodeType === TreeView.CONSTANTS.NODE_TYPES.FOLDER && node.children?.length > 0) {
+        // Use custom renderer if provided
+        if (this.options.nodeRenderer) {
+            const customContent = this.options.nodeRenderer(node, path, {
+                isExpanded: this.expandedNodes.has(path),
+                isSelected: this.selectedNodes.has(path),
+                hasChildren: node.children && node.children.length > 0
+            });
+            if (customContent) {
+                if (typeof customContent === 'string') {
+                    contentDiv.innerHTML = customContent;
+                } else {
+                    contentDiv.appendChild(customContent);
+                }
+            }
+        } else {
+            // Default rendering
+            // Expansion icon (for nodes with children)
+            if (this.options.showIcons && node.children && node.children.length > 0) {
+                const expandIcon = document.createElement('span');
+                expandIcon.className = 'treeview-expand-icon';
+                Object.assign(expandIcon.style, TreeView.CONSTANTS.STYLES.ICON);
+                
                 const isExpanded = this.expandedNodes.has(path);
-                icon = isExpanded ? (typeIcons?.expanded || icon) : (typeIcons?.collapsed || icon);
+                expandIcon.textContent = isExpanded 
+                    ? TreeView.CONSTANTS.ICONS.EXPANDED 
+                    : TreeView.CONSTANTS.ICONS.COLLAPSED;
+                contentDiv.appendChild(expandIcon);
             }
             
-            typeIcon.textContent = icon;
-            contentDiv.appendChild(typeIcon);
-        }
-        
-        // Label
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'treeview-label';
-        labelSpan.textContent = node.label || node.name || `Node ${path}`;
-        contentDiv.appendChild(labelSpan);
-        
-        // Property toggles
-        if (this.options.showPropertyToggles.length > 0 && node.properties) {
-            const togglesContainer = document.createElement('span');
-            togglesContainer.className = 'treeview-toggles';
-            togglesContainer.style.marginLeft = 'auto';
-            togglesContainer.style.display = 'flex';
-            togglesContainer.style.gap = '4px';
-            
-            this.options.showPropertyToggles.forEach(property => {
-                if (property in node.properties) {
-                    const toggle = this._createPropertyToggle(node, path, property);
-                    togglesContainer.appendChild(toggle);
-                }
-            });
-            
-            contentDiv.appendChild(togglesContainer);
+            // Label
+            const labelSpan = document.createElement('span');
+            labelSpan.className = 'treeview-label';
+            labelSpan.textContent = node.label || node.name || `Node ${path}`;
+            contentDiv.appendChild(labelSpan);
         }
         
         nodeDiv.appendChild(contentDiv);
         
         // Event listeners
         nodeDiv.addEventListener('click', (e) => {
-            // Don't handle node click if clicking on property toggles
-            if (e.target.closest('.treeview-toggles')) {
-                return;
-            }
             e.stopPropagation();
             this._handleNodeClick(node, path, nodeDiv);
         });
@@ -317,57 +231,6 @@ export class TreeView {
         this.onSelectionChange(Array.from(this.selectedNodes), node);
     }
 
-    _createPropertyToggle(node, path, property) {
-        const toggle = document.createElement('span');
-        toggle.className = 'treeview-property-toggle';
-        toggle.dataset.property = property;
-        toggle.style.cursor = 'pointer';
-        toggle.style.padding = '2px';
-        toggle.style.borderRadius = '2px';
-        toggle.style.fontSize = '12px';
-        
-        const value = node.properties[property];
-        const icons = TreeView.CONSTANTS.PROPERTY_ICONS[property];
-        toggle.textContent = icons ? icons[value] : (value ? '✓' : '✗');
-        toggle.title = `${property}: ${value}`;
-        
-        toggle.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this._handlePropertyToggle(node, path, property);
-        });
-        
-        toggle.addEventListener('mouseenter', () => {
-            toggle.style.backgroundColor = '#555';
-        });
-        
-        toggle.addEventListener('mouseleave', () => {
-            toggle.style.backgroundColor = '';
-        });
-        
-        return toggle;
-    }
-
-    _handlePropertyToggle(node, path, property) {
-        if (node.properties && property in node.properties) {
-            const oldValue = node.properties[property];
-            const newValue = !oldValue;
-            node.properties[property] = newValue;
-            
-            // Update the toggle icon
-            const nodeElement = this.nodeElements.get(path);
-            if (nodeElement) {
-                const toggle = nodeElement.querySelector(`[data-property="${property}"]`);
-                if (toggle) {
-                    const icons = TreeView.CONSTANTS.PROPERTY_ICONS[property];
-                    toggle.textContent = icons ? icons[newValue] : (newValue ? '✓' : '✗');
-                    toggle.title = `${property}: ${newValue}`;
-                }
-            }
-            
-            this.onPropertyToggle(path, property, newValue, oldValue, node);
-        }
-    }
-
     _toggleNode(path) {
         const isExpanded = this.expandedNodes.has(path);
         
@@ -385,20 +248,6 @@ export class TreeView {
                 expandIcon.textContent = isExpanded 
                     ? TreeView.CONSTANTS.ICONS.COLLAPSED 
                     : TreeView.CONSTANTS.ICONS.EXPANDED;
-            }
-        }
-        
-        // Update type icon for folders
-        if (nodeElement && this.options.showTypeIcons) {
-            const typeIcon = nodeElement.querySelector('.treeview-type-icon');
-            const nodeType = nodeElement.dataset.nodeType;
-            if (typeIcon && nodeType === TreeView.CONSTANTS.NODE_TYPES.FOLDER) {
-                const typeIcons = TreeView.CONSTANTS.TYPE_ICONS[nodeType];
-                if (typeIcons) {
-                    typeIcon.textContent = isExpanded 
-                        ? (typeIcons.collapsed || typeIcons.default)
-                        : (typeIcons.expanded || typeIcons.default);
-                }
             }
         }
         

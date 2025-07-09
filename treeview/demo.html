@@ -96,112 +96,11 @@
     <script type="module">
         import { TreeView } from './treeview.js';
         import { SplitPane } from '../splitpane/splitpane.js';
+        import { demoModel, createDemoNodeRenderer, handlePropertyToggle } from './demo_model.js';
+        import { demoContents } from './demo_contents.js';
 
-        // Sample data with different node types and properties
-        const sampleData = [
-            {
-                id: 'project',
-                label: 'My Project',
-                type: 'folder',
-                properties: {
-                    visible: true,
-                    enabled: true
-                },
-                children: [
-                    {
-                        id: 'src',
-                        label: 'src',
-                        type: 'folder',
-                        properties: {
-                            visible: true,
-                            enabled: true
-                        },
-                        children: [
-                            {
-                                id: 'main.js',
-                                label: 'main.js',
-                                type: 'file',
-                                properties: {
-                                    visible: true,
-                                    enabled: true,
-                                    locked: false
-                                }
-                            },
-                            {
-                                id: 'utils.js',
-                                label: 'utils.js',
-                                type: 'file',
-                                properties: {
-                                    visible: false,
-                                    enabled: true,
-                                    locked: true
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        id: 'components',
-                        label: 'components',
-                        type: 'folder',
-                        properties: {
-                            visible: true,
-                            enabled: true
-                        },
-                        children: [
-                            {
-                                id: 'header',
-                                label: 'Header Component',
-                                type: 'component',
-                                properties: {
-                                    visible: true,
-                                    enabled: false
-                                }
-                            },
-                            {
-                                id: 'sidebar',
-                                label: 'Sidebar Component',
-                                type: 'component',
-                                properties: {
-                                    visible: true,
-                                    enabled: true
-                                }
-                            }
-                        ]
-                    },
-                    {
-                        id: 'layers',
-                        label: 'Visual Layers',
-                        type: 'folder',
-                        properties: {
-                            visible: true,
-                            enabled: true
-                        },
-                        children: [
-                            {
-                                id: 'background',
-                                label: 'Background Layer',
-                                type: 'layer',
-                                properties: {
-                                    visible: true,
-                                    enabled: true,
-                                    locked: false
-                                }
-                            },
-                            {
-                                id: 'ui',
-                                label: 'UI Layer',
-                                type: 'layer',
-                                properties: {
-                                    visible: false,
-                                    enabled: true,
-                                    locked: true
-                                }
-                            }
-                        ]
-                    }
-                ]
-            }
-        ];
+        // Use the demo contents
+        const sampleData = demoContents;
 
         // Create the splitpane
         const splitContainer = document.getElementById('splitContainer');
@@ -210,32 +109,31 @@
             splitRatio: 0.2,
             minSize: 300,
             panel1: { title: 'Tree View' },
-            panel2: { title: 'Data & Events' }
+            panel2: { title: '' }
         });
 
-        // Get the panel content areas
-        const leftPanel = split.getPanel(1);
-        const rightPanel = split.getPanel(2);
+        const split2 = new SplitPane(split.getPanel(2), {
+            orientation: 'vertical',
+            splitRatio: 0.5,
+            minSize: 100,
+            panel1: { title: 'Tree Data (JSON)', content: '' },
+            panel2: { title: 'Events Log', content: '' }
+        });
 
-        // Create right panel content
-        const rightContent = document.createElement('div');
-        rightContent.className = 'right-panel-content';
-        rightContent.innerHTML = `
-            <div class="section-title">Tree Data (JSON)</div>
-            <div id="jsonViewer" class="json-viewer"></div>
-            
-            <div class="section-title">Events Log</div>
-            <div id="eventsLog" class="events-log"></div>
-        `;
-        rightPanel.appendChild(rightContent);
-
-        const jsonViewer = document.getElementById('jsonViewer');
-        const eventsLog = document.getElementById('eventsLog');
-        
         function updateJsonViewer() {
-            jsonViewer.innerHTML = `<pre style="margin:0;"><code>${escapeHtml(JSON.stringify(sampleData, null, 2))}</code></pre>`;
+            split2.setPanel(1, `<pre style="margin:0;"><code>${escapeHtml(JSON.stringify(sampleData, null, 2))}</code></pre>`);
         }
-        
+
+        function logEvent(message) {
+            // Get current content, append new event, and update
+            let html = split2.getPanel(2).innerHTML || '';
+            const timestamp = new Date().toLocaleTimeString();
+            html += `<div style="margin-bottom:4px;color:#a0c0ff;"><span style="color:#888;">[${timestamp}]</span> ${message}</div>`;
+            split2.setPanel(2, html);
+            // Scroll to bottom
+            split2.getPanel(2).scrollTop = split2.getPanel(2).scrollHeight;
+        }
+
         // Utility to escape HTML for safe code display
         function escapeHtml(str) {
             return str.replace(/[&<>"']/g, function(tag) {
@@ -250,40 +148,58 @@
             });
         }
 
-        function logEvent(message) {
-            const timestamp = new Date().toLocaleTimeString();
-            const eventDiv = document.createElement('div');
-            eventDiv.style.marginBottom = '4px';
-            eventDiv.style.color = '#a0c0ff';
-            eventDiv.innerHTML = `<span style="color: #888;">[${timestamp}]</span> ${message}`;
-            eventsLog.appendChild(eventDiv);
-            eventsLog.scrollTop = eventsLog.scrollHeight;
-        }
-
-        // Create the treeview in the left panel
+        // Create the treeview using the generic TreeView with demo configuration
         const treeview = new TreeView({
-            container: leftPanel,
+            container: split.getPanel(1),
             data: sampleData,
-            showIcons: true,
-            showTypeIcons: true,
-            showPropertyToggles: ['visible', 'enabled', 'locked'],
-            multiSelect: true,
+            ...demoModel.treeViewConfig,
+            nodeRenderer: createDemoNodeRenderer(demoModel),
             onSelectionChange: (selectedPaths, node) => {
-                logEvent(`<span style="color: #4fc3f7;">Selection:</span> ${selectedPaths.join(', ')} | <span style="color: #ffeb3b;">Node:</span> ${node.label}`);
+                logEvent(`<span style="color:#4fc3f7;">Selection:</span> ${selectedPaths.join(', ')} | <span style="color:#ffeb3b;">Node:</span> ${node.label}`);
             },
             onNodeExpand: (path, expanded) => {
-                logEvent(`<span style="color: #4caf50;">Node:</span> ${expanded ? 'expanded' : 'collapsed'} → ${path}`);
-            },
-            onPropertyToggle: (path, property, newValue, oldValue, node) => {
-                logEvent(`<span style="color: #ff9800;">Property:</span> '${property}' ${oldValue} → ${newValue} for '${node.label}' (${path})`);
-                updateJsonViewer(); // Update JSON when properties change
+                logEvent(`<span style="color:#4caf50;">Node:</span> ${expanded ? 'expanded' : 'collapsed'} → ${path}`);
+            }
+        });
+
+        // Add toggle click handlers
+        split.getPanel(1).addEventListener('click', (e) => {
+            if (e.target.classList.contains('treeview-property-toggle')) {
+                e.stopPropagation();
+                const path = e.target.closest('[data-path]').dataset.path;
+                const property = e.target.dataset.property;
+                
+                // Find the node using the path
+                function findNodeByPath(nodes, targetPath) {
+                    if (!targetPath) return nodes[0]; // root case
+                    const pathParts = targetPath.split('.');
+                    let current = nodes;
+                    
+                    for (const part of pathParts) {
+                        const index = parseInt(part);
+                        current = current[index];
+                        if (pathParts[pathParts.length - 1] !== part && current.children) {
+                            current = current.children;
+                        }
+                    }
+                    return current;
+                }
+                
+                const node = findNodeByPath(sampleData, path);
+                handlePropertyToggle(node, path, property, demoModel, 
+                    (path, property, newValue, oldValue, node) => {
+                        logEvent(`<span style="color:#ff9800;">Toggle:</span> '${property}' ${oldValue} → ${newValue} for '${node.label}' (${path})`);
+                        updateJsonViewer();
+                    }, 
+                    treeview.nodeElements
+                );
             }
         });
 
         // Initialize
         updateJsonViewer();
-        logEvent('TreeView demo initialized with <span style="color: #4fc3f7;">enhanced features</span>');
-        logEvent('Try: <span style="color: #ffeb3b;">selecting nodes</span>, <span style="color: #4caf50;">expanding folders</span>, <span style="color: #ff9800;">toggling properties</span>');
+        logEvent('TreeView demo initialized with <span style="color:#4fc3f7;">enhanced features</span>');
+        logEvent('Try: <span style="color:#ffeb3b;">selecting nodes</span>, <span style="color:#4caf50;">expanding folders</span>, <span style="color:#ff9800;">toggling properties</span> (👁️📍🔒▶️)');
     </script>
 </body>
 </html>
