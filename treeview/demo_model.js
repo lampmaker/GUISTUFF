@@ -201,5 +201,27 @@ export const demoCallbacks = {
             logEvent(`<span style="color:#ff9800;">Toggle:</span> '${property}' ${oldValue} → ${newValue} for '${node.label}' (${path})`);
             updateJsonViewer();
         }
+    },
+
+    onNodeDrop: (sourcePath, targetPath, action, sourceNode, targetNode, errorReason, logEvent, updateJsonViewer) => {
+        switch (action) {
+            case 'dragstart':
+                logEvent(`<span style="color:#ff9800;">Drag Start:</span> Moving '${sourceNode.label}' (${sourceNode.type})`);
+                break;
+            case 'drop':
+                if (targetNode) {
+                    logEvent(`<span style="color:#4caf50;">Drop:</span> Moved '${sourceNode.label}' to '${targetNode.label}' | <span style="color:#81c784;">Valid drop zone</span>`);
+                    updateJsonViewer();
+                } else {
+                    logEvent(`<span style="color:#f44336;">Drop Failed:</span> Invalid drop target for '${sourceNode.label}'`);
+                }
+                break;
+            case 'drop_failed':
+                logEvent(`<span style="color:#f44336;">Drop Failed:</span> ${errorReason || 'Invalid drop operation'}`);
+                break;
+            case 'dragend':
+                logEvent(`<span style="color:#9e9e9e;">Drag End:</span> Drag operation completed`);
+                break;
+        }
     }
 };

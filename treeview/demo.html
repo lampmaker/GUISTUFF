@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,26 +15,31 @@
             height: 100vh;
             overflow: hidden;
         }
+
         .demo-container {
             height: 100vh;
             display: flex;
             flex-direction: column;
         }
+
         .demo-header {
             padding: 15px 20px;
             background-color: #2d2d2d;
             border-bottom: 1px solid #444;
             flex-shrink: 0;
         }
+
         .demo-content {
             flex: 1;
             min-height: 0;
         }
+
         h1 {
             margin: 0;
             color: #4fc3f7;
             font-size: 24px;
         }
+
         .info {
             background-color: #333;
             padding: 8px 12px;
@@ -41,10 +47,12 @@
             margin-top: 10px;
             font-size: 13px;
         }
+
         .info ul {
             margin: 5px 0;
             padding-left: 20px;
         }
+
         .json-viewer {
             background-color: #1a1a1a;
             padding: 10px;
@@ -56,6 +64,7 @@
             font-size: 12px;
             border: 1px solid #444;
         }
+
         .events-log {
             background-color: #1a1a1a;
             padding: 10px;
@@ -66,27 +75,56 @@
             font-size: 12px;
             border: 1px solid #444;
         }
+
         .right-panel-content {
             padding: 15px;
             height: 100%;
             box-sizing: border-box;
             overflow-y: auto;
         }
+
         .section-title {
             color: #4fc3f7;
             margin: 0 0 10px 0;
             font-size: 16px;
             font-weight: bold;
         }
+
+        /* Drag and Drop Styling */
+        .treeview-node[draggable="true"] {
+            cursor: grab;
+        }
+
+        .treeview-node[draggable="true"]:active {
+            cursor: grabbing;
+        }
+
+        .treeview-node.drag-over-valid {
+            background-color: rgba(0, 122, 204, 0.2) !important;
+            border: 1px solid #007acc !important;
+            box-shadow: 0 0 8px rgba(0, 122, 204, 0.3);
+        }
+
+        .treeview-node.drag-over-invalid {
+            background-color: rgba(255, 68, 68, 0.2) !important;
+            border: 1px solid #ff4444 !important;
+            box-shadow: 0 0 8px rgba(255, 68, 68, 0.3);
+        }
+
+        .treeview-drop-indicator {
+            transition: all 0.2s ease;
+        }
     </style>
 </head>
+
 <body>
     <div class="demo-container">
         <div class="demo-header">
             <h1>TreeView Comprehensive Toolbox - Step 1</h1>
             <div class="info">
-                Enhanced treeview with: <strong>Node Types</strong> (folder, file, component, layer) • 
-                <strong>Type-specific Icons</strong> • <strong>Property Toggles</strong> (visible, enabled, locked) • 
+                Enhanced treeview with: <strong>Node Types</strong> (folder, file, component, layer) •
+                <strong>Type-specific Icons</strong> • <strong>Property Toggles</strong> (visible, enabled, locked) •
+                <strong>Drag & Drop Reordering</strong> (respects allowedChildren) •
                 <strong>Clear Documentation</strong>
             </div>
         </div>
@@ -137,14 +175,8 @@
 
         // Utility to escape HTML for safe code display
         function escapeHtml(str) {
-            return str.replace(/[&<>"']/g, function(tag) {
-                const chars = {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                };
+            return str.replace(/[&<>"']/g, function (tag) {
+                const chars = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
                 return chars[tag] || tag;
             });
         }
@@ -157,6 +189,7 @@
             toggleDefinitions: demoModel.toggleDefinitions,
             toggleOrder: demoModel.toggleOrder,
             nodeTypes: demoModel.nodeTypes,
+            enableDragDrop: true, // Enable drag and drop
             onSelectionChange: (selectedPaths, node) => {
                 demoCallbacks.onSelectionChange(selectedPaths, node, logEvent);
             },
@@ -171,17 +204,21 @@
                 if (type === 'action' && property === 'add') {
                     treeview.setData(sampleData);
                 }
+            },
+            onNodeDrop: (sourcePath, targetPath, action, sourceNode, targetNode, errorReason) => {
+                demoCallbacks.onNodeDrop(sourcePath, targetPath, action, sourceNode, targetNode, errorReason, logEvent, updateJsonViewer);
             }
         });
 
         // Initialize
         updateJsonViewer();
-        
+
         logEvent(`TreeView demo initialized with <span style="color:#4fc3f7;">enhanced features</span>`);
         logEvent(`Project node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0')}</span>`);
         logEvent(`Components node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0.1')}</span>`);
         logEvent(`Layers node expanded: <span style="color:#81c784;">${treeview.isNodeExpanded('0.3')}</span>`);
-        logEvent('Try: <span style="color:#ffeb3b;">selecting nodes</span>, <span style="color:#4caf50;">expanding folders</span>, <span style="color:#ff9800;">toggling properties</span> (👁️📍🔒▶️)');
+        logEvent('Try: <span style="color:#ffeb3b;">selecting nodes</span>, <span style="color:#4caf50;">expanding folders</span>, <span style="color:#ff9800;">toggling properties</span> (👁️📍🔒▶️), <span style="color:#81c784;">drag & drop reordering</span>');
     </script>
 </body>
+
 </html>
