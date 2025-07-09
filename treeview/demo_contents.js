@@ -1,29 +1,8 @@
 /**
  * Demo Contents
- * Sample data structure for the TreeView demo
+ * Sample data structure for the TreeView demo.
+ * This requires the tree to be properly configured wiht the correct node types (demo_model.js).
  */
-
-let noToggles = {
-    add: null,     // Layers usually don't add children
-    visible: null,
-    enabled: null,
-    locked: null,
-    active: null
-}
-
-
-/*
-// Show all toggles with custom values
-toggles: {
-    visible: false,   // Override default
-    active: 'paused'  // Set specific state
-    // other toggles inherited from node type
-}
-*/
-
-
-
-
 
 
 export const demoContents = [
@@ -31,7 +10,13 @@ export const demoContents = [
         id: 'project',
         label: 'My Project',
         type: 'folder',
-        toggles: noToggles,
+        toggles: {
+            add: null,     // Layers usually don't add children
+            visible: null,
+            enabled: null,
+            locked: null,
+            active: null
+        },
         expanded: true,  // Start expanded for demo purposes
         // toggles will inherit from folder type defaults
         children: [

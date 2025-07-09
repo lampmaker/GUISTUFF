@@ -276,32 +276,6 @@ export class TreeView {
             Object.assign(nodeDiv.style, TreeView.CONSTANTS.STYLES.NODE_SELECTED);
         }
         
-        // Drag and drop events
-        if (this.options.enableDragDrop) {
-            nodeDiv.setAttribute('draggable', 'true');
-            
-            nodeDiv.addEventListener('dragstart', (e) => {
-                e.stopPropagation();
-                this._handleDragStart(node, path, nodeDiv);
-            });
-            
-            nodeDiv.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                this._handleDragOver(node, path, nodeDiv, e);
-            });
-            
-            nodeDiv.addEventListener('dragleave', (e) => {
-                e.stopPropagation();
-                this._handleDragLeave(node, path, nodeDiv, e);
-            });
-            
-            nodeDiv.addEventListener('drop', (e) => {
-                e.stopPropagation();
-                this._handleDrop(node, path, nodeDiv, e);
-            });
-        }
-        
         this.nodeElements.set(path, nodeDiv);
         return nodeDiv;
     }
@@ -362,6 +336,7 @@ export class TreeView {
      * @private
      */
     _getNodeByPath(path) {
+        if (typeof path !== 'string') return null;
         const pathParts = path.split('.').map(Number);
         let current = this.options.data;
         
@@ -1016,6 +991,7 @@ export class TreeView {
      * @private
      */
     _handleDragOver(event, node, path, nodeElement) {
+        if (!event || typeof event.preventDefault !== 'function') return;
         if (!this.draggedNode || this.draggedPath === path) {
             return;
         }
@@ -1064,8 +1040,8 @@ export class TreeView {
      * @private
      */
     _handleDragLeave(event, node, path, nodeElement) {
-        // Only clear styling if we're actually leaving this element
-        if (!nodeElement.contains(event.relatedTarget)) {
+        if (!nodeElement || typeof nodeElement.contains !== 'function') return;
+        if (!event || !event.relatedTarget || !nodeElement.contains(event.relatedTarget)) {
             this._clearDropStyling(nodeElement);
             this._hideDropIndicator();
             if (this.currentDropTarget && this.currentDropTarget.path === path) {
@@ -1079,6 +1055,7 @@ export class TreeView {
      * @private
      */
     _handleDrop(event, targetNode, targetPath, nodeElement) {
+        if (!event || typeof event.preventDefault !== 'function') return;
         event.preventDefault();
         
         if (!this.draggedNode || this.draggedPath === targetPath) {
