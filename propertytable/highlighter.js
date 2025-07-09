@@ -271,16 +271,17 @@ const textareaHighlighters = new WeakMap();
  * @param {Object} options - Configuration options
  * @param {boolean} options.wordwrap - Enable word wrapping
  * @param {string} options.highlighting - Type of syntax highlighting ('glsl', etc.)
+ * @param {boolean} options.scrollbars - Show scrollbars
  */
 export function setTextareaStyle(textarea, options = {}) {
     if (!textarea || !(textarea instanceof HTMLTextAreaElement)) {
         throw new Error('Invalid textarea element provided');
     }
 
-    const { wordwrap, highlighting } = options;
+    const { wordwrap, highlighting, scrollbars } = options;
 
     // Apply base styling
-    _applyBaseStyles(textarea);
+    _applyBaseStyles(textarea, scrollbars);
     
     // Apply word wrap settings
     _applyWordWrapStyles(textarea, wordwrap);
@@ -294,8 +295,10 @@ export function setTextareaStyle(textarea, options = {}) {
     }
 }
 
-function _applyBaseStyles(textarea) {
-    Object.assign(textarea.style, HIGHLIGHTER_CONFIG.BASE_TEXTAREA_STYLES);
+function _applyBaseStyles(textarea, scrollbars) {
+    Object.assign(textarea.style, HIGHLIGHTER_CONFIG.BASE_TEXTAREA_STYLES, {
+        overflow: scrollbars ? 'auto' : 'hidden'
+    });
 }
 
 function _applyWordWrapStyles(textarea, wordwrap) {
