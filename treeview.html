@@ -206,6 +206,9 @@
                     treeview.setData(sampleData);
                 }
             },
+            onNodeAdd:(node, newChild, action, childType) => {
+                demoCallbacks.onNodeAdd(node, newChild, action, childType, logEvent, updateJsonViewer);
+            },  
             onNodeDrop: (sourcePath, targetPath, action, sourceNode, targetNode, errorReason) => {
                 demoCallbacks.onNodeDrop(sourcePath, targetPath, action, sourceNode, targetNode, errorReason, logEvent, updateJsonViewer);
             }

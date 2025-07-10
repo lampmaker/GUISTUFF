@@ -48,7 +48,8 @@ export class TreeView {
         this.nodeElements = new Map();
         this.onSelectionChange = options.onSelectionChange || (() => {});
         this.onNodeExpand = options.onNodeExpand || (() => {});
-        this.onToggleClick = options.onToggleClick || (() => {});
+        this.onToggleClick = options.onToggleClick || (() => { });
+        this.onNodeAdd = options.onNodeAdd || (() => {}); // New callback for adding nodes
         this.onNodeDrop = options.onNodeDrop || (() => {}); // New callback for drag/drop events
 
         // Drag and drop state
@@ -492,11 +493,11 @@ export class TreeView {
         node.children.push(newChild);
         node.expanded = true; // Expand parent to show new child
         this._render();
-        
+        this.onNodeAdd(node, newChild, 'add_child', childType);
         // Notify via callback
-        if (this.onToggleClick) {
-            this.onToggleClick(null, 'add', null, null, newChild, 'add_child');
-        }
+       // if (this.onToggleClick) {
+      //      this.onToggleClick(null, 'add', null, null, newChild, 'add_child');
+       // }
     }
 
     /**
