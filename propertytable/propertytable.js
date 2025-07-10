@@ -62,20 +62,39 @@ class PropertyTable extends Pane {
     }
 
     //========================================================================================================================================
-    // This method binds multiple properties of an object to the pane
-    // It takes an object with properties and an options object for each property. if there are no options, it will use an empty object.
-    bindControls(objects, options = {}, onclick = () => {}) {
+    // Shared bindControls logic used by both class and instance methods
+    _bindControlsLogic(container, objects, options = {}, onclick = () => {}) {
         Object.entries(objects).forEach(([key, value]) => {
             // Check if the value is an object but not a vector type
             if (typeof value === 'object' && value !== null && !this.isVector(value)) {
-                // Create a folder for this object and bind its properties
-                const folder = this.addFolder({ title: key });
-                folder.bindControls(value, options[key] || {}, onclick);
+                // Create folder parameters
+                const folderParams = {
+                    title: key,
+                    object: value,
+                    options: options[key] || {}
+                };
+                
+                // Check if this nested object should be expandable
+                if (options[key]?.expandable) {
+                    folderParams.expandable = true;
+                }
+                
+                // Create the folder and enhance it
+                const subfolder = container.addFolder(folderParams);
+                this._enhanceFolderWithBindings(subfolder);
             } else {
                 // Bind normally for primitives and vectors
-                this.addBinding(objects, key, options[key] || {}).on('click', onclick);
+                const binding = container.addBinding(objects, key, options?.[key] || {}).on('click', onclick);
+                addContextMenu(binding, objects, key, options);
             }
         });
+    }
+
+    //========================================================================================================================================
+    // This method binds multiple properties of an object to the pane
+    // It takes an object with properties and an options object for each property. if there are no options, it will use an empty object.
+    bindControls(objects, options = {}, onclick = () => {}) {
+        this._bindControlsLogic(this, objects, options, onclick);
     }
 
     //========================================================================================================================================  
@@ -170,19 +189,25 @@ class PropertyTable extends Pane {
 
 
     //========================================================================================================================================
-    // Override the addFolder method to customize how folders are created
-    addFolder(params) {
-        const folder = super.addFolder(params);
-
+    // Shared folder creation logic used by both class and instance addFolder methods
+    _createEnhancedFolder(originalAddFolder, params, context) {
+        const folder = originalAddFolder.call(context, params);
+         console.log("add folder", params);
         this._enhanceFolderWithBindings(folder);
-        if(params?.object)folder.bindControls(params.object, params.options || {});
+        if (params?.object) folder.bindControls(params.object, params.options || {});
 
-        //if (params?.expandable && params?.object) {
-        if (params?.expandable) {
+        if (params?.expandable || params?.object?.expandable) {
             this._makeExpandableFolder(folder, params);
         }
         
         return folder;
+    }
+
+    //========================================================================================================================================
+    // Override the addFolder method to customize how folders are created
+    addFolder(params) {
+     
+        return this._createEnhancedFolder(super.addFolder, params, this);
     }
 
     //========================================================================================================================================
@@ -194,24 +219,16 @@ class PropertyTable extends Pane {
             return this._setupBinding(originalAddBinding.bind(folder), target, property, options);
         }
 
+        // Override addFolder to use the same logic as the class addFolder method
+        const originalAddFolder = folder.addFolder;
+        folder.addFolder = (params) => {
+            return this._createEnhancedFolder(originalAddFolder, params, folder);
+        }
+
         // Attach bindControls to the folder
         folder.bindControls = (objects, options = {}, onclick = () => {}) => {
             folder.bindings = { objects, options };
-            
-            Object.entries(objects).forEach(([key, value]) => {
-                // Check if the value is an object but not a vector type
-                if (typeof value === 'object' && value !== null && !this.isVector(value)) {
-                    // Create a folder for this object and bind its properties
-                    const subfolder = folder.addFolder({ title: key });
-                    // Apply the same enhancements to the subfolder
-                    this._enhanceFolderWithBindings(subfolder);
-                    subfolder.bindControls(value, options[key] || {}, onclick);
-                } else {
-                    // Bind normally for primitives and vectors
-                    const binding = folder.addBinding(objects, key, options?.[key] || {}).on('click', onclick);
-                    addContextMenu(binding, objects, key, options);
-                }
-            });
+            this._bindControlsLogic(folder, objects, options, onclick);
         };
     }
 
