@@ -296,6 +296,16 @@ class PropertyTable extends Pane {
         };
     }
 
+    //========================================================================================================================================
+    // Public method to make a folder expandable after creation
+    makeExpandable(folder, params = {}) {
+        if (!folder.bindings) {
+            console.warn('Folder must have bindings (object and options) to be made expandable');
+            return;
+        }
+        this._makeExpandableFolder(folder, params);
+    }
+
 }
 
 export { PropertyTable };

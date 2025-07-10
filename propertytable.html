@@ -124,13 +124,17 @@ void main() {
         }
 
 
-        MENU1.addFolder({
+        const fixedFolder = MENU1.addFolder({
             title: "Fixed Properties",
             expandable: false,
             object: fixedProperties,
             options: options,
             expanded: true,
         })
+
+        // Make the folder expandable after creation using the public method
+        console.log(fixedFolder)
+        MENU1.makeExpandable(fixedFolder);
      
         MENU1.addFolder({
             title: "flexible Properties",
