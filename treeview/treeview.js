@@ -584,8 +584,8 @@ export class TreeView {
         container.style.alignItems = 'center';
         container.style.width = '100%';
 
-        // Expansion icon (only if showIcons is enabled)
-        if (this.options.showIcons && state.hasChildren) {
+        // Expansion icon (always create a placeholder for consistent indentation)
+        if (this.options.showIcons) {
             const expandIcon = document.createElement('span');
             expandIcon.className = 'treeview-expand-icon';
             expandIcon.style.marginRight = '4px';
@@ -595,17 +595,23 @@ export class TreeView {
             expandIcon.style.alignItems = 'center';
             expandIcon.style.justifyContent = 'center';
             
-            const iconSvg = state.isExpanded ? TreeView.CONSTANTS.ICONS.EXPANDED : TreeView.CONSTANTS.ICONS.COLLAPSED;
-            if (iconSvg.includes('<svg')) {
-                expandIcon.innerHTML = iconSvg;
-                const svg = expandIcon.querySelector('svg');
-                if (svg) {
-                    svg.style.width = '12px';
-                    svg.style.height = '12px';
-                    svg.style.display = 'block';
+            if (state.hasChildren) {
+                // Show actual expand/collapse icon for nodes with children
+                const iconSvg = state.isExpanded ? TreeView.CONSTANTS.ICONS.EXPANDED : TreeView.CONSTANTS.ICONS.COLLAPSED;
+                if (iconSvg.includes('<svg')) {
+                    expandIcon.innerHTML = iconSvg;
+                    const svg = expandIcon.querySelector('svg');
+                    if (svg) {
+                        svg.style.width = '12px';
+                        svg.style.height = '12px';
+                        svg.style.display = 'block';
+                    }
+                } else {
+                    expandIcon.textContent = iconSvg;
                 }
             } else {
-                expandIcon.textContent = iconSvg;
+                // For leaf nodes, add empty space to maintain indentation
+                expandIcon.innerHTML = '&nbsp;'; // Non-breaking space placeholder
             }
             container.appendChild(expandIcon);
         }
