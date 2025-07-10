@@ -99,6 +99,20 @@ class PropertyTable extends Pane {
         this._bindControlsLogic(this, objects, options, onclick);
     }
 
+    //========================================================================================================================================
+    // Clear all controls and bind to new objects
+    clearAndBindControls(objects, options = {}, onclick = () => {}) {
+        this.clearControls();
+        this.bindControls(objects, options, onclick);
+    }
+
+    //========================================================================================================================================
+    // Clear all existing controls from the pane
+    clearControls() {
+        // Clear all children by disposing them
+        this.children.slice().forEach(child => child.dispose());
+    }
+
     //========================================================================================================================================  
     // This method prepares the binding options before they are added to the pane
     bindingPrepper(target, property, options) {
