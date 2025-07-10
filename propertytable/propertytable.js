@@ -53,12 +53,28 @@ class PropertyTable extends Pane {
     constructor(options) {
         super(options);
     }
+
+    //========================================================================================================================================
+    // This method checks if the object is a vector type (vec2, vec3, vec4).. used for binding; if it is a vector, it will use the appropriate binding type,
+    // if it is another object, it will create a folder and bind the properties of the object to the folder
+    isVector(o) {
+        return ['xy', 'xyz', 'wxyz'].includes(Object.keys(o).sort().join(''));
+    }
+
     //========================================================================================================================================
     // This method binds multiple properties of an object to the pane
     // It takes an object with properties and an options object for each property. if there are no options, it will use an empty object.
     bindControls(objects, options = {}, onclick = () => {}) {
         Object.entries(objects).forEach(([key, value]) => {
-            this.addBinding(objects, key, options[key] || {}).on('click', onclick);
+            // Check if the value is an object but not a vector type
+            if (typeof value === 'object' && value !== null && !this.isVector(value)) {
+                // Create a folder for this object and bind its properties
+                const folder = this.addFolder({ title: key });
+                folder.bindControls(value, options[key] || {}, onclick);
+            } else {
+                // Bind normally for primitives and vectors
+                this.addBinding(objects, key, options[key] || {}).on('click', onclick);
+            }
         });
     }
 
@@ -183,8 +199,18 @@ class PropertyTable extends Pane {
             folder.bindings = { objects, options };
             
             Object.entries(objects).forEach(([key, value]) => {
-                const binding = folder.addBinding(objects, key, options?.[key] || {}).on('click', onclick);
-                addContextMenu(binding, objects, key, options);
+                // Check if the value is an object but not a vector type
+                if (typeof value === 'object' && value !== null && !this.isVector(value)) {
+                    // Create a folder for this object and bind its properties
+                    const subfolder = folder.addFolder({ title: key });
+                    // Apply the same enhancements to the subfolder
+                    this._enhanceFolderWithBindings(subfolder);
+                    subfolder.bindControls(value, options[key] || {}, onclick);
+                } else {
+                    // Bind normally for primitives and vectors
+                    const binding = folder.addBinding(objects, key, options?.[key] || {}).on('click', onclick);
+                    addContextMenu(binding, objects, key, options);
+                }
             });
         };
     }
