@@ -84,8 +84,10 @@ class PropertyTable extends Pane {
                 this._enhanceFolderWithBindings(subfolder);
             } else {
                 // Bind normally for primitives and vectors
+                if (key!="expandable"){             // ignore expandable key
                 const binding = container.addBinding(objects, key, options?.[key] || {}).on('click', onclick);
                 addContextMenu(binding, objects, key, options);
+                }
             }
         });
     }
