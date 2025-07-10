@@ -29,4 +29,4 @@ new TreeView(options)
 - `debugPaths()` – log all node paths for debugging.
 - `destroy()` – remove the view from the DOM.
 
-Drag and drop operations call `onNodeDrop` with actions `dragstart`, `drop`, `drop_failed` and `dragend`. Reordering is supported by dropping above or below a node. A blue line indicates the drop position.
+Drag and drop operations call `onNodeDrop` with actions `dragstart`, `drop`, `drop_failed` and `dragend`. The component no longer auto-expands nodes while dragging. A thick blue line indicates where the dragged item will be inserted.

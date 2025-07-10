@@ -868,188 +868,73 @@ export class TreeView {
     // Drag and drop handling
 
     /**
-     * Handle drag start event
+     * Start dragging
      * @private
      */
     _handleDragStart(event, node, path, nodeElement) {
         this.draggedNode = node;
         this.draggedPath = path;
-        
-        // Set drag data
         event.dataTransfer.setData('text/plain', path);
         event.dataTransfer.effectAllowed = 'move';
-        
-        // Add visual feedback to dragged element
         nodeElement.style.opacity = '0.5';
-        
-        // Notify callback
         if (this.onNodeDrop) {
             this.onNodeDrop(path, null, 'dragstart', node);
         }
     }
 
     /**
-     * Handle drag over event - determines if drop is allowed
+     * Drag over handler
      * @private
      */
     _handleDragOver(event, node, path, nodeElement) {
-        if (!event || typeof event.preventDefault !== 'function') return;
-        if (!this.draggedNode || this.draggedPath === path) {
-            return;
-        }
-        
-        // Throttle drag over events to reduce flickering
-        const now = Date.now();
-        if (now - this.lastDragOverTime < 75) { // Increased throttle for "before" stability
-            return;
-        }
-        this.lastDragOverTime = now;
-        
-        // Determine potential drop target based on position
+        if (!event || !this.draggedNode || this.draggedPath === path) return;
+
         const rect = nodeElement.getBoundingClientRect();
         const mouseY = event.clientY;
-        const nodeHeight = rect.height;
-        
-        // Make the "before" zone smaller and more stable
-        const topZone = rect.top + Math.min(nodeHeight * 0.15, 8); // Max 8px or 15% of height
-        const bottomZone = rect.bottom - nodeHeight * 0.2;
-        
+        const third = rect.height / 3;
+
         let canDrop = false;
-        let dropTarget = node;
-        
-        if (mouseY < topZone || mouseY > bottomZone) {
-            // Check if parent can accept the dragged node (for before/after positioning)
+
+        if (mouseY < rect.top + third) {
             const parts = path.split('.');
-            if (parts.length > 1) {
-                const parentPath = parts.slice(0, -1).join('.');
-                const parentNode = getNodeByPath(this.options.data, parentPath);
-                canDrop = canNodeAcceptChild(parentNode, this.draggedNode, this.options.nodeTypes, this.draggedPath, path);
-                dropTarget = parentNode;
-            } else {
-                // Root level - always allow reordering
-                canDrop = true;
-            }
+            const parentPath = parts.slice(0, -1).join('.');
+            const parentNode = parts.length > 1 ? getNodeByPath(this.options.data, parentPath) : { children: this.options.data, type: 'root' };
+            canDrop = canNodeAcceptChild(parentNode, this.draggedNode, this.options.nodeTypes, this.draggedPath, path);
+        } else if (mouseY > rect.bottom - third) {
+            const parts = path.split('.');
+            const parentPath = parts.slice(0, -1).join('.');
+            const parentNode = parts.length > 1 ? getNodeByPath(this.options.data, parentPath) : { children: this.options.data, type: 'root' };
+            canDrop = canNodeAcceptChild(parentNode, this.draggedNode, this.options.nodeTypes, this.draggedPath, path);
         } else {
-            // Check if this node can accept the dragged node as a child
             canDrop = canNodeAcceptChild(node, this.draggedNode, this.options.nodeTypes, this.draggedPath, path);
         }
-        
+
         if (canDrop) {
             event.preventDefault();
-            event.dataTransfer.dropEffect = 'move';
-            
-            // Show drop indicator with enhanced positioning
             this._showDropIndicator(nodeElement, event);
         } else {
-            // Clear any existing drop indicators
             this._hideDropIndicator();
         }
     }
 
     /**
-     * Handle drag enter event
-     * @private
-     */
-    _handleDragEnter(event, node, path, nodeElement) {
-        if (!this.draggedNode || this.draggedPath === path) {
-            return;
-        }
-        
-        // Prevent rapid state changes
-        if (this.currentDropTarget && this.currentDropTarget.path === path) {
-            return; // Already processing this target
-        }
-        
-        this.currentDropTarget = { node, path, element: nodeElement };
-        
-        // Determine what type of drop this would be based on mouse position
-        const rect = nodeElement.getBoundingClientRect();
-        const mouseY = event.clientY;
-        const nodeHeight = rect.height;
-        
-        // Use the same zone logic as drag over for consistency
-        const topZone = rect.top + Math.min(nodeHeight * 0.15, 8); // Max 8px or 15% of height
-        const bottomZone = rect.bottom - nodeHeight * 0.2;
-        
-        let canDrop = false;
-        let dropType = 'inside';
-        
-        if (mouseY < topZone) {
-            dropType = 'before';
-            // Check parent acceptance for before/after
-            const parts = path.split('.');
-            if (parts.length > 1) {
-                const parentPath = parts.slice(0, -1).join('.');
-                const parentNode = getNodeByPath(this.options.data, parentPath);
-                canDrop = canNodeAcceptChild(parentNode, this.draggedNode, this.options.nodeTypes, this.draggedPath, path);
-            } else {
-                canDrop = true; // Root level reordering
-            }
-        } else if (mouseY > bottomZone) {
-            dropType = 'after';
-            // Check parent acceptance for before/after
-            const parts = path.split('.');
-            if (parts.length > 1) {
-                const parentPath = parts.slice(0, -1).join('.');
-                const parentNode = getNodeByPath(this.options.data, parentPath);
-                canDrop = canNodeAcceptChild(parentNode, this.draggedNode, this.options.nodeTypes, this.draggedPath, path);
-            } else {
-                canDrop = true; // Root level reordering
-            }
-        } else {
-            dropType = 'inside';
-            canDrop = canNodeAcceptChild(node, this.draggedNode, this.options.nodeTypes, this.draggedPath, path);
-        }
-        
-        if (canDrop) {
-            nodeElement.classList.add('drag-over-valid');
-            if (dropType === 'inside') {
-                nodeElement.style.backgroundColor = '#007acc22'; // Lighter blue for child drop
-                nodeElement.style.border = '1px solid #007acc';
-            } else {
-                nodeElement.style.backgroundColor = '#00cc7a22'; // Lighter green for sibling reordering
-                nodeElement.style.border = '1px solid #00cc7a';
-            }
-        } else {
-            nodeElement.classList.add('drag-over-invalid');
-            // Visual feedback for invalid drop
-            nodeElement.style.backgroundColor = '#ff444422'; // Lighter red background
-            nodeElement.style.border = '1px solid #ff4444';
-        }
-        
-        // Show tooltip indicating drop zone details
-        this._showDropTooltip(nodeElement, node, canDrop, dropType);
-    }
-
-    /**
-     * Handle drag leave event
+     * Drag leave handler
      * @private
      */
     _handleDragLeave(event, node, path, nodeElement) {
-        if (!nodeElement || typeof nodeElement.contains !== 'function') return;
-        if (!event || !event.relatedTarget || !nodeElement.contains(event.relatedTarget)) {
-            this._clearDropStyling(nodeElement);
+        if (!event.relatedTarget || !nodeElement.contains(event.relatedTarget)) {
             this._hideDropIndicator();
-            this._hideDropTooltip();
-            if (this.currentDropTarget && this.currentDropTarget.path === path) {
-                this.currentDropTarget = null;
-            }
         }
     }
 
     /**
-     * Handle drop event
+     * Drop handler
      * @private
      */
-    _handleDrop(event, targetNode, targetPath, nodeElement) {
-        if (!event || typeof event.preventDefault !== 'function') return;
+    _handleDrop(event, targetNode, targetPath) {
+        if (!event || !this.draggedNode) return;
         event.preventDefault();
-        
-        if (!this.draggedNode || this.draggedPath === targetPath) {
-            return;
-        }
-        
-        // Validate the drop operation
+
         const validation = validateDragDropOperation(
             this.options.data,
             this.draggedPath,
@@ -1057,159 +942,92 @@ export class TreeView {
             this.options.nodeTypes,
             this.dropPosition
         );
-        
+
         if (validation.valid) {
-            // Perform the move operation
             moveNode(this.options.data, this.draggedPath, targetPath, this.dropPosition);
             this._render();
-            
-            // Notify callback
             if (this.onNodeDrop) {
                 this.onNodeDrop(this.draggedPath, targetPath, 'drop', this.draggedNode, targetNode);
             }
-        } else {
-            // Log validation error
-            console.warn('Drop operation failed:', validation.reason);
-            
-            // Notify callback of failed drop
-            if (this.onNodeDrop) {
-                this.onNodeDrop(this.draggedPath, targetPath, 'drop_failed', this.draggedNode, targetNode, validation.reason);
-            }
+        } else if (this.onNodeDrop) {
+            this.onNodeDrop(this.draggedPath, targetPath, 'drop_failed', this.draggedNode, targetNode, validation.reason);
         }
-        
-        this._clearDropStyling(nodeElement);
+
         this._hideDropIndicator();
-        this._hideDropTooltip();
     }
 
     /**
-     * Handle drag end event
+     * Drag end handler
      * @private
      */
-    _handleDragEnd(event) {
-        // Restore original opacity
+    _handleDragEnd() {
         if (this.draggedPath) {
-            const draggedElement = this.nodeElements.get(this.draggedPath);
-            if (draggedElement) {
-                draggedElement.style.opacity = '';
-            }
+            const el = this.nodeElements.get(this.draggedPath);
+            if (el) el.style.opacity = '';
         }
-        
-        // Clear all drop styling
-        this.nodeElements.forEach(element => {
-            this._clearDropStyling(element);
-        });
 
         this._hideDropIndicator();
-        this._hideDropTooltip();
-        this._removeInsertionIndicators();
         this.draggedNode = null;
         this.draggedPath = null;
-        this.currentDropTarget = null;
-        
-        // Notify callback
         if (this.onNodeDrop) {
             this.onNodeDrop(null, null, 'dragend');
         }
     }
 
     /**
-     * Get all node types that can accept this node as a child
+     * Determine allowed parents
      * @private
      */
     _getAllowedParentTypes(node) {
         const nodeType = node.type || 'custom';
         const allowedParents = [];
-        
-        // Check all defined node types to see which ones accept this node type
-        Object.entries(this.options.nodeTypes).forEach(([parentType, parentDefinition]) => {
-            const allowedChildren = parentDefinition.allowedChildren || [];
+        Object.entries(this.options.nodeTypes).forEach(([parentType, def]) => {
+            const allowedChildren = def.allowedChildren || [];
             if (allowedChildren.includes(nodeType)) {
                 allowedParents.push(parentType);
             }
         });
-        
         return allowedParents;
     }
 
     /**
-     * Show the drop indicator at the appropriate position
+     * Display drop indicator
      * @private
      */
     _showDropIndicator(nodeElement, event) {
         const rect = nodeElement.getBoundingClientRect();
-        
-        // Position the indicator
         this.dropIndicator.style.left = `${rect.left}px`;
         this.dropIndicator.style.width = `${rect.width}px`;
-        
-        // Determine drop position based on mouse position and node type
+
         const mouseY = event.clientY;
-        const nodeTop = rect.top;
-        const nodeBottom = rect.bottom;
-        const nodeHeight = rect.height;
-        
-        // Create smaller, less sensitive zones to reduce flickering
-        // Make the "before" zone smaller and more stable
-        const topZone = nodeTop + Math.min(nodeHeight * 0.15, 8); // Max 8px or 15% of height
-        const bottomZone = nodeBottom - nodeHeight * 0.2;
-        
-        // Get the node data to check if it can accept children
-        const nodePath = nodeElement.dataset.path;
-        const node = getNodeByPath(this.options.data, nodePath);
-        const canAcceptChild = canNodeAcceptChild(node, this.draggedNode, this.options.nodeTypes);
-        
-        this._clearIndicatorSpacing();
-        this._clearChildrenSpacing(nodePath);
-        
-        if (mouseY < topZone) {
-            // Drop before this node - use larger spacing for better visibility
-            this.dropIndicator.style.top = `${rect.top - 2}px`;
-            this.dropIndicator.style.height = '3px'; // Thicker line
-            nodeElement.style.marginTop = '12px'; // Increased spacing for visibility
+        const third = rect.height / 3;
+
+        if (mouseY < rect.top + third) {
+            this.dropIndicator.style.top = `${rect.top}px`;
             this.dropPosition = 'before';
-        } else if (mouseY > bottomZone) {
-            // Drop after this node
-            this.dropIndicator.style.top = `${rect.bottom + 2}px`;
-            this.dropIndicator.style.height = '3px'; // Thicker line
-            nodeElement.style.marginBottom = '12px'; // Increased spacing for visibility
+        } else if (mouseY > rect.bottom - third) {
+            this.dropIndicator.style.top = `${rect.bottom}px`;
             this.dropPosition = 'after';
-        } else if (canAcceptChild) {
-            // Drop inside this node (as a child) - only in the middle zone
-            this.dropIndicator.style.top = `${rect.bottom + 1}px`;
-            this.dropIndicator.style.left = `${rect.left + 20}px`; // Indent to show it's a child
-            this.dropIndicator.style.width = `${rect.width - 20}px`;
-            this.dropIndicator.style.height = '2px'; // Normal thickness for inside
-            nodeElement.style.backgroundColor = '#007acc22'; // Subtle background highlight
-            this.dropPosition = 'inside';
-            
-            // Show simple insertion feedback for children
-            this._spaceChildrenForDrop(nodePath, event);
         } else {
-            // Default to after if can't accept child
-            this.dropIndicator.style.top = `${rect.bottom + 2}px`;
-            this.dropIndicator.style.height = '3px'; // Thicker line
-            nodeElement.style.marginBottom = '12px'; // Increased spacing for visibility
-            this.dropPosition = 'after';
+            this.dropIndicator.style.left = `${rect.left + 16}px`;
+            this.dropIndicator.style.width = `${rect.width - 16}px`;
+            this.dropIndicator.style.top = `${rect.bottom}px`;
+            this.dropPosition = 'inside';
         }
-        
-        this.lastIndicatorElement = nodeElement;
+
         this.dropIndicator.style.opacity = '1';
     }
 
     /**
-     * Hide the drop indicator
+     * Hide drop indicator
      * @private
      */
     _hideDropIndicator() {
         this.dropIndicator.style.opacity = '0';
-        this._clearIndicatorSpacing();
-        this._clearAllChildrenSpacing();
-        this.dropPosition = 'inside';
     }
 
     /**
-     * Clear drop-related styling from a node element
+     * Clear drop styling
      * @private
      */
     _clearDropStyling(nodeElement) {
@@ -1218,244 +1036,10 @@ export class TreeView {
         if (!this.selectedNodes.has(nodeElement.dataset.path)) {
             nodeElement.style.backgroundColor = '';
         }
-        if (nodeElement === this.lastIndicatorElement) {
-            this._clearIndicatorSpacing();
-            this._clearAllChildrenSpacing();
-        }
     }
 
     /**
-     * Clear indicator spacing from the last element
-     * @private
-     */
-    _clearIndicatorSpacing() {
-        if (this.lastIndicatorElement) {
-            this.lastIndicatorElement.style.marginTop = '';
-            this.lastIndicatorElement.style.marginBottom = '';
-            this.lastIndicatorElement = null;
-        }
-    }
-
-    /**
-     * Space out children of a parent node to show where a dropped item would be inserted
-     * @private
-     */
-    _spaceChildrenForDrop(parentPath, event) {
-        const parentNode = getNodeByPath(this.options.data, parentPath);
-        if (!parentNode || !parentNode.children || parentNode.children.length === 0) {
-            return;
-        }
-
-        // Check if parent can accept the dragged node type
-        const canAcceptDraggedType = canNodeAcceptChild(parentNode, this.draggedNode, this.options.nodeTypes);
-        if (!canAcceptDraggedType) {
-            return; // Don't space children if parent can't accept the dragged type
-        }
-
-        // Only show insertion indicator if we're clearly in the "inside" zone
-        // Don't show it for every mouse movement to reduce flickering
-        const parentElement = this.nodeElements.get(parentPath);
-        if (!parentElement) return;
-        
-        const parentRect = parentElement.getBoundingClientRect();
-        const mouseY = event.clientY;
-        
-        // Only show insertion indicators in a more restricted area
-        const isInInsideZone = mouseY > parentRect.top + parentRect.height * 0.3 && 
-                             mouseY < parentRect.bottom - parentRect.height * 0.3;
-        
-        if (!isInInsideZone) {
-            this._removeInsertionIndicators();
-            return;
-        }
-        
-        // Remove any existing insertion indicators
-        this._removeInsertionIndicators();
-        
-        // Show a simple insertion indicator at the end of the children
-        if (parentNode.children.length > 0) {
-            const lastChildPath = `${parentPath}.${parentNode.children.length - 1}`;
-            const lastChildElement = this.nodeElements.get(lastChildPath);
-            if (lastChildElement) {
-                this._showInsertionIndicator(lastChildElement, 'after');
-            }
-        }
-    }
-
-    /**
-     * Show an insertion indicator without affecting layout
-     * @private
-     */
-    _showInsertionIndicator(element, position) {
-        const indicator = document.createElement('div');
-        indicator.className = 'treeview-insertion-indicator';
-        indicator.style.cssText = `
-            position: absolute;
-            left: ${element.getBoundingClientRect().left + 20}px;
-            width: ${element.getBoundingClientRect().width - 20}px;
-            height: 4px;
-            background-color: #00cc7a;
-            box-shadow: 0 0 8px rgba(0, 204, 122, 0.6);
-            z-index: 1000;
-            pointer-events: none;
-            border-radius: 2px;
-        `;
-        
-        const rect = element.getBoundingClientRect();
-        if (position === 'before') {
-            indicator.style.top = `${rect.top - 2}px`;
-        } else {
-            indicator.style.top = `${rect.bottom + 2}px`;
-        }
-        
-        document.body.appendChild(indicator);
-        this.currentInsertionIndicator = indicator;
-    }
-
-    /**
-     * Remove insertion indicators
-     * @private
-     */
-    _removeInsertionIndicators() {
-        if (this.currentInsertionIndicator && this.currentInsertionIndicator.parentNode) {
-            this.currentInsertionIndicator.parentNode.removeChild(this.currentInsertionIndicator);
-        }
-        this.currentInsertionIndicator = null;
-    }
-
-    /**
-     * Clear spacing from children of a specific parent
-     * @private
-     */
-    _clearChildrenSpacing(parentPath) {
-        const parentNode = getNodeByPath(this.options.data, parentPath);
-        if (!parentNode || !parentNode.children) {
-            return;
-        }
-
-        // Clear traditional spacing (keeping this for backward compatibility)
-        parentNode.children.forEach((child, index) => {
-            const childPath = `${parentPath}.${index}`;
-            const childElement = this.nodeElements.get(childPath);
-            if (childElement) {
-                childElement.style.marginTop = '';
-                childElement.style.marginBottom = '';
-            }
-        });
-        
-        // Clear insertion indicators
-        this._removeInsertionIndicators();
-    }
-
-    /**
-     * Clear spacing from all children in the tree
-     * @private
-     */
-    _clearAllChildrenSpacing() {
-        this.nodeElements.forEach((element, path) => {
-            element.style.marginTop = '';
-            element.style.marginBottom = '';
-        });
-        
-        // Clear insertion indicators
-        this._removeInsertionIndicators();
-    }
-
-    /**
-     * Show tooltip indicating what types can be dropped on this node
-     * @private
-     */
-    _showDropTooltip(nodeElement, node, isValid, dropType = 'inside') {
-        // Remove any existing tooltip
-        this._hideDropTooltip();
-        
-        const tooltip = document.createElement('div');
-        tooltip.className = 'treeview-drop-tooltip';
-        
-        const nodeType = node.type || 'custom';
-        const allowedChildren = node.allowedChildren || 
-            this.options.nodeTypes[nodeType]?.allowedChildren || [];
-        
-        if (isValid) {
-            let actionText = '';
-            let bgColor = '#1a4a1a';
-            let borderColor = '#4caf50';
-            
-            if (dropType === 'inside') {
-                actionText = `✓ Add as Child`;
-                bgColor = '#1a4a4a';
-                borderColor = '#007acc';
-            } else if (dropType === 'before') {
-                actionText = `✓ Insert Before`;
-                bgColor = '#1a4a2a';
-                borderColor = '#00cc7a';
-            } else if (dropType === 'after') {
-                actionText = `✓ Insert After`;
-                bgColor = '#1a4a2a';
-                borderColor = '#00cc7a';
-            }
-            
-            tooltip.innerHTML = `
-                <div style="color: ${borderColor}; font-weight: bold;">${actionText}</div>
-                <div style="font-size: 11px; margin-top: 2px;">
-                    ${node.label} (${nodeType})
-                    ${dropType === 'inside' ? `accepts: ${allowedChildren.join(', ')}` : ''}
-                </div>
-            `;
-            tooltip.style.backgroundColor = bgColor;
-            tooltip.style.borderColor = borderColor;
-        } else {
-            const draggedType = this.draggedNode?.type || 'custom';
-            tooltip.innerHTML = `
-                <div style="color: #f44336; font-weight: bold;">✗ Invalid Drop Zone</div>
-                <div style="font-size: 11px; margin-top: 2px;">
-                    ${node.label} (${nodeType}) cannot accept ${draggedType}
-                </div>
-                <div style="font-size: 10px; margin-top: 2px; color: #999;">
-                    Accepts: ${allowedChildren.length > 0 ? allowedChildren.join(', ') : 'no children'}
-                </div>
-            `;
-            tooltip.style.backgroundColor = '#4a1a1a';
-            tooltip.style.borderColor = '#f44336';
-        }
-        
-        tooltip.style.cssText += `
-            position: absolute;
-            background: #2d2d2d;
-            color: #e0e0e0;
-            border: 1px solid;
-            border-radius: 4px;
-            padding: 6px 8px;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 2000;
-            pointer-events: none;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            max-width: 200px;
-        `;
-        
-        document.body.appendChild(tooltip);
-        this.currentTooltip = tooltip;
-        
-        // Position tooltip near the node
-        const rect = nodeElement.getBoundingClientRect();
-        tooltip.style.left = `${rect.right + 10}px`;
-        tooltip.style.top = `${rect.top}px`;
-        
-        // Adjust position if tooltip goes off screen
-        setTimeout(() => {
-            const tooltipRect = tooltip.getBoundingClientRect();
-            if (tooltipRect.right > window.innerWidth) {
-                tooltip.style.left = `${rect.left - tooltipRect.width - 10}px`;
-            }
-            if (tooltipRect.bottom > window.innerHeight) {
-                tooltip.style.top = `${rect.bottom - tooltipRect.height}px`;
-            }
-        }, 0);
-    }
-
-    /**
-     * Hide drop tooltip
+     * Hide tooltip (noop in simplified mode)
      * @private
      */
     _hideDropTooltip() {

@@ -48,7 +48,7 @@ export const STYLES = {
     },
     DROP_INDICATOR: {
         position: 'absolute',
-        height: '2px',
+        height: '4px',
         backgroundColor: '#007acc',
         borderRadius: '1px',
         boxShadow: '0 0 4px rgba(0, 122, 204, 0.5)',
