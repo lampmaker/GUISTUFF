@@ -16,7 +16,7 @@ import { GLSLHighlighter } from './highlighter_glsl.js';
 // Configuration constants
 const HIGHLIGHTER_CONFIG = {
     DEBOUNCE_DELAY: 50,
-    Z_INDEX: { OVERLAY: 1, TEXTAREA: 2 },
+    Z_INDEX: { OVERLAY: 1, TEXTAREA: 2, LINE_NUMBERS: 0 },
     FALLBACK_CARET_COLOR: '#ffffff',
     SUPPORTED_STYLES: [
         'whiteSpace', 'wordWrap', 'overflowWrap', 'wordBreak',
@@ -42,7 +42,17 @@ const HIGHLIGHTER_CONFIG = {
         backgroundColor: 'var(--in-bg)',
         fontFamily: 'inherit',
         fontSize: 'inherit',
-        fontWeight: 'inherit'
+        fontWeight: 'inherit',        
+    },
+    LINE_NUMBERS: {
+        WIDTH: '30px',
+        PADDING: '0 4px 0 2px',
+        BACKGROUND: 'var(--cnt-bg, #2d2d2d)',
+        COLOR: 'var(--in-fg-disabled, #858585)',
+        BORDER_RIGHT: '1px solid var(--cnt-bg-disabled, #404040)',
+        FONT_FAMILY: 'monospace',
+        TEXT_ALIGN: 'right',
+        USER_SELECT: 'none'
     }
 };
 
@@ -86,12 +96,14 @@ highlighterRegistry.register('glsl', GLSLHighlighter);
  * Manages syntax highlighting overlay for a single textarea with proper lifecycle
  */
 class TextareaHighlighter {
-    constructor(textarea, highlighterType) {
+    constructor(textarea, highlighterType, options = {}) {
         this.textarea = textarea;
         this.highlighterType = highlighterType;
+        this.options = options;
         this.highlighter = highlighterRegistry.getInstance(highlighterType);
         this.container = null;
         this.overlay = null;
+        this.lineNumbers = null;
         this.resizeObserver = null;
         this.highlightTimeout = null;
         this.isDestroyed = false;
@@ -102,6 +114,9 @@ class TextareaHighlighter {
     _setupHighlighting() {
         this._createContainer();
         this._createOverlay();
+        if (this.options.lineNumbers) {
+            this._createLineNumbers();
+        }
         this._setupTextarea();
         this._setupEventListeners();
         this._setupResizeObserver();
@@ -141,20 +156,63 @@ class TextareaHighlighter {
     }
 
     _setupOverlayStyles() {
+        const leftOffset = this.options.lineNumbers ? HIGHLIGHTER_CONFIG.LINE_NUMBERS.WIDTH : '0';
+        const basePadding = '4px'; // Match textarea padding
         Object.assign(this.overlay.style, {
             position: 'absolute',
-            top: '0', left: '0',
-            width: '100%', height: '100%',
+            top: '0', 
+            left: leftOffset,
+            width: this.options.lineNumbers ? `calc(100% - ${HIGHLIGHTER_CONFIG.LINE_NUMBERS.WIDTH})` : '100%',
+            height: '100%',
             pointerEvents: 'none',
-            padding: '0', margin: '0', border: 'none',
+            padding: basePadding,
+            paddingLeft: this.options.lineNumbers ? basePadding : basePadding,
+            margin: '0', 
+            border: 'none',
             color: 'var(--in-fg)',
             zIndex: HIGHLIGHTER_CONFIG.Z_INDEX.OVERLAY,
-            overflow: 'hidden'
+            overflow: 'hidden',
+            boxSizing: 'border-box'
+        });
+    }
+
+    _createLineNumbers() {
+        this.lineNumbers = document.createElement('div');
+        this._setupLineNumbersStyles();
+        this.container.appendChild(this.lineNumbers);
+    }
+
+    _setupLineNumbersStyles() {
+        const computedStyle = getComputedStyle(this.textarea);
+        const basePadding = '4px'; // Match textarea padding
+        Object.assign(this.lineNumbers.style, {
+            position: 'absolute',
+            top: '0', left: '0',
+            width: HIGHLIGHTER_CONFIG.LINE_NUMBERS.WIDTH,
+            height: '100%',
+            padding: `${basePadding} 4px ${basePadding} 2px`, // Match textarea vertical padding
+            backgroundColor: HIGHLIGHTER_CONFIG.LINE_NUMBERS.BACKGROUND,
+            color: HIGHLIGHTER_CONFIG.LINE_NUMBERS.COLOR,
+            borderRight: HIGHLIGHTER_CONFIG.LINE_NUMBERS.BORDER_RIGHT,
+            fontFamily: computedStyle.fontFamily || HIGHLIGHTER_CONFIG.LINE_NUMBERS.FONT_FAMILY,
+            fontSize: computedStyle.fontSize,
+            lineHeight: computedStyle.lineHeight,
+            textAlign: HIGHLIGHTER_CONFIG.LINE_NUMBERS.TEXT_ALIGN,
+            userSelect: HIGHLIGHTER_CONFIG.LINE_NUMBERS.USER_SELECT,
+            zIndex: HIGHLIGHTER_CONFIG.Z_INDEX.LINE_NUMBERS,
+            overflow: 'hidden',
+            whiteSpace: 'pre',
+            boxSizing: 'border-box'
         });
     }
 
     _setupTextarea() {
         // Make textarea transparent but keep caret visible
+        const basePadding = '4px'; // Add some base padding for readability
+        const leftPadding = this.options.lineNumbers ? 
+            `calc(${HIGHLIGHTER_CONFIG.LINE_NUMBERS.WIDTH} + ${basePadding})` : 
+            basePadding;
+        
         Object.assign(this.textarea.style, {
             position: 'relative',
             zIndex: HIGHLIGHTER_CONFIG.Z_INDEX.TEXTAREA,
@@ -163,9 +221,13 @@ class TextareaHighlighter {
             color: 'transparent',
             border: 'none',
             outline: 'none',
-            padding: '0', margin: '0',
+            padding: basePadding, 
+            paddingLeft: leftPadding,
+            margin: '0',
             textShadow: 'none',
-            webkitTextFillColor: 'transparent'
+            webkitTextFillColor: 'transparent',
+            boxSizing: 'border-box',
+            width: '100%'
         });
 
         this._setupCaretVisibility();
@@ -210,8 +272,16 @@ class TextareaHighlighter {
         this.highlightTimeout = setTimeout(() => {
             if (!this.isDestroyed && this.overlay) {
                 this.overlay.innerHTML = this.highlighter.highlight(this.textarea.value);
+                this._updateLineNumbers();
             }
         }, HIGHLIGHTER_CONFIG.DEBOUNCE_DELAY);
+    }
+
+    _updateLineNumbers() {
+        if (this.isDestroyed || !this.lineNumbers) return;
+        
+        const lines = this.textarea.value.split('\n');
+        this.lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('<br>');
     }
 
     _syncOverlay() {
@@ -219,6 +289,11 @@ class TextareaHighlighter {
         
         this.overlay.scrollTop = this.textarea.scrollTop;
         this.overlay.scrollLeft = this.textarea.scrollLeft;
+        
+        // Sync line numbers scroll if they exist
+        if (this.lineNumbers) {
+            this.lineNumbers.scrollTop = this.textarea.scrollTop;
+        }
         
         const textareaRect = this.textarea.getBoundingClientRect();
         this.overlay.style.width = `${textareaRect.width}px`;
@@ -280,7 +355,7 @@ export function setTextareaStyle(textarea, options = {}) {
         throw new Error('Invalid textarea element provided');
     }
 
-    const { wordwrap, highlighting, scrollbars } = options;
+    const { wordwrap, highlighting, scrollbars, lineNumbers } = options;
 
     // Apply base styling
     _applyBaseStyles(textarea, scrollbars);
@@ -290,7 +365,7 @@ export function setTextareaStyle(textarea, options = {}) {
     
     // Setup syntax highlighting if specified
     if (highlighting) {
-        _setupSyntaxHighlighting(textarea, highlighting);
+        _setupSyntaxHighlighting(textarea, highlighting, { lineNumbers });
     } else {
         // Remove any existing highlighting
         _removeSyntaxHighlighting(textarea);
@@ -311,7 +386,7 @@ function _applyWordWrapStyles(textarea, wordwrap) {
     Object.assign(textarea.style, styles);
 }
 
-function _setupSyntaxHighlighting(textarea, highlighterType) {
+function _setupSyntaxHighlighting(textarea, highlighterType, additionalOptions = {}) {
     if (!highlighterRegistry.isSupported(highlighterType)) {
         console.warn(`Unsupported highlighter type: ${highlighterType}`);
         return;
@@ -323,8 +398,8 @@ function _setupSyntaxHighlighting(textarea, highlighterType) {
     // Set highlighting attribute
     textarea.setAttribute('data-highlighting', highlighterType);
 
-    // Create new highlighter instance
-    const highlighter = new TextareaHighlighter(textarea, highlighterType);
+    // Create new highlighter instance with options
+    const highlighter = new TextareaHighlighter(textarea, highlighterType, additionalOptions);
     textareaHighlighters.set(textarea, highlighter);
 }
 

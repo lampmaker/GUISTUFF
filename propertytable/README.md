@@ -13,7 +13,25 @@ const pane = new PropertyTable(options);
 - Context menus for each binding with type specific options.
 - Automatic detection of binding types.
 - Multiline text fields with syntax highlighting.
+- Line numbers support for multiline text fields.
 - Folder helpers for adding and removing child objects.
+
+## Multiline Text with Line Numbers
+
+For multiline text fields, you can enable line numbers by setting the `lineNumbers` option:
+
+```javascript
+const options = {
+    myCode: {
+        multiline: true,
+        rows: 12,
+        highlighting: 'glsl',  // Optional syntax highlighting
+        lineNumbers: true      // Enable line numbers
+    }
+};
+
+pane.bindControls(myObject, options);
+```
 
 ## Key Methods
 - `bindControls(object, options, onClick)` – bind multiple properties at once.
