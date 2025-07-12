@@ -166,6 +166,55 @@ class PropertyTable extends Pane {
                 }
                 break;
             }
+            case "vec3":
+            case "vec4": {
+                setTimeout(() => {
+                    try {
+                        const element = binding.element;
+                        const label = element?.querySelector('.tp-lblv_l') || element;
+                        Object.assign(label.style, PropertyTable.CONSTANTS.STYLES.FLEX_CENTER);
+
+                        const plusBtn = document.createElement('button');
+                        plusBtn.textContent = '+';
+                        plusBtn.title = 'Show sliders';
+                        Object.assign(plusBtn.style, PropertyTable.CONSTANTS.STYLES.PLUS_BUTTON);
+
+                        const { HOVER, DEFAULT } = PropertyTable.CONSTANTS.OPACITY;
+                        plusBtn.onmouseenter = () => plusBtn.style.opacity = HOVER;
+                        plusBtn.onmouseleave = () => plusBtn.style.opacity = DEFAULT;
+
+                        let currentPopup;
+                        const keys = type === 'vec3' ? ['x', 'y', 'z'] : ['x', 'y', 'z', 'w'];
+
+                        function showPopup() {
+                            currentPopup?.remove();
+                            const pane = createPopupPane({
+                                positionElement: plusBtn,
+                                title: property
+                            });
+                            currentPopup = pane._popup;
+                            keys.forEach(k => {
+                                pane.addBinding(target[property], k, Object.assign({ label: k }, options?.[k] || {}));
+                            });
+                        }
+
+                        plusBtn.onclick = e => {
+                            e.stopPropagation();
+                            if (currentPopup) {
+                                currentPopup.remove();
+                                currentPopup = null;
+                            } else {
+                                showPopup();
+                            }
+                        };
+
+                        label.appendChild(plusBtn);
+                    } catch (error) {
+                        console.warn('Failed to add vector slider popup:', error);
+                    }
+                }, PropertyTable.CONSTANTS.TIMEOUTS.DOM_MODIFICATION);
+                break;
+            }
             default:
                 break;
         }
