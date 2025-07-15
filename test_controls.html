@@ -5,10 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Tests</title>
     <style>
-        body {
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
             font-family: Arial, sans-serif;
-            padding: 20px;
             background: #f5f5f5;
+        }
+        
+        #main-container {
+            height: 100vh;
+        }
+        
+        .left-content {
+            padding: 20px;
+            height: 100%;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        
+        .right-content {
+            padding: 20px;
+            height: 100%;
+            box-sizing: border-box;
+            overflow: auto;
         }
         
         .control, .slider-control {
@@ -29,19 +49,21 @@
         }
         
         .control label, .slider-control label {
-            min-width: 100px;
+            min-width: 70px;
             font-weight: bold;
         }
         
         .inputs {
             display: flex;
-            gap: 5px;
+            gap: 3px;
             margin-left: auto;
+            width: 180px;
         }
         
         .inputs input {
-            width: 60px;
-            padding: 4px 8px;
+            width:30px;
+            flex: 1;
+            padding: 4px 6px;
             border: 1px solid #ccc;
             border:none;
             background-color: aliceblue;
@@ -49,8 +71,8 @@
         }
         
         .slider-control input[type="range"] {
-            flex: 1;
-            margin: 0 10px;
+            width: 120px;
+            margin: 0;
         }
         
         .output {
@@ -58,9 +80,11 @@
             border: 1px solid #bee5eb;
             border-radius: 4px;
             padding: 10px;
-            margin: 20px 0;
+            margin: 0;
             font-family: monospace;
             white-space: pre-line;
+            height: 300px;
+            overflow-y: auto;
         }
         
         h1 {
@@ -79,22 +103,50 @@
     </style>
 </head>
 <body>
-    <h1>Control Tests</h1>
-    
-    <div class="test-section">
-        <h2>Multi Controls</h2>
-        <div id="multi-controls"></div>
-    </div>
-    
-    <div class="test-section">
-        <h2>Slider Controls</h2>
-        <div id="slider-controls"></div>
-    </div>
-    
-    <div class="output" id="output">Events will appear here...</div>
+    <div id="main-container"></div>
     
     <script type="module">
         import { createMultiControl, createSliderControl } from './goei/control.js';
+        import { SplitPane } from './splitpane/splitpane.js';
+        
+        // Create split pane
+        const mainContainer = document.getElementById('main-container');
+        const split = new SplitPane(mainContainer, {
+            orientation: 'horizontal',
+            splitRatio: 0.3,
+            minSize: 200,
+            panel1: { title: 'Controls Menu' },
+            panel2: { title: 'Output' }
+        });
+        
+        // Get content areas
+        const leftPanel = split.getPanel(1);
+        const rightPanel = split.getPanel(2);
+        
+        // Create left panel content
+        const leftContent = document.createElement('div');
+        leftContent.className = 'left-content';
+        leftContent.innerHTML = `
+            <h1>Control Tests</h1>
+            <div class="test-section">
+                <h2>Multi Controls</h2>
+                <div id="multi-controls"></div>
+            </div>
+            <div class="test-section">
+                <h2>Slider Controls</h2>
+                <div id="slider-controls"></div>
+            </div>
+        `;
+        leftPanel.appendChild(leftContent);
+        
+        // Create right panel content
+        const rightContent = document.createElement('div');
+        rightContent.className = 'right-content';
+        rightContent.innerHTML = `
+            <h1>Output</h1>
+            <div class="output" id="output">Events will appear here...</div>
+        `;
+        rightPanel.appendChild(rightContent);
         
         const output = document.getElementById('output');
         const log = (msg) => {
@@ -113,6 +165,12 @@
             onValueClick: (e, index, value) => log(`Position value ${index} clicked: ${value}`)
         });
         
+        const name = createMultiControl({
+            label: 'name',
+            values: ["Jonathan"]
+        });
+        
+
         const colorControl = createMultiControl({
             label: 'RGB Color',
             values: [255, 128, 64],
@@ -132,7 +190,9 @@
             onChange: (vals) => log(`Full width values: [${vals.join(', ')}]`),
         });
         
+        multiContainer.appendChild(name);
         multiContainer.appendChild(positionControl);
+
         multiContainer.appendChild(colorControl);
         multiContainer.appendChild(nameControl);
         multiContainer.appendChild(fullWidthInputs);

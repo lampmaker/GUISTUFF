@@ -1,4 +1,6 @@
-// creates a very basic control element
+// creates a the basic control elements.
+// a multi-element (floats vectors or whatever) text
+// and slider elements
 
 
 //===================================================================================
