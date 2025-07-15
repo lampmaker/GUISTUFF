@@ -187,9 +187,16 @@ class PropertyTable extends Pane {
                     try {
                         const element = binding.element;
                         const label = element?.querySelector('.tp-lblv_l') || element;
+                        
+                        // Check if plus button already exists to prevent duplicates
+                        if (label.querySelector('.vector-plus-btn')) {
+                            return;
+                        }
+                        
                         Object.assign(label.style, PropertyTable.CONSTANTS.STYLES.FLEX_CENTER);
 
                         const plusBtn = document.createElement('button');
+                        plusBtn.className = 'vector-plus-btn'; // Add class for identification
                         plusBtn.textContent = '+';
                         plusBtn.title = 'Show sliders';
                         Object.assign(plusBtn.style, PropertyTable.CONSTANTS.STYLES.PLUS_BUTTON);
