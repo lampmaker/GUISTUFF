@@ -135,13 +135,13 @@ function _positionPopup(popup, positionElement, x, y, width, height) {
 
     if (positionElement) {
         const rect = positionElement.getBoundingClientRect();
-        // Use a reasonable default width instead of the tiny button width
+        // Align popup's right edge with control's right edge
         let popupWidth = Math.max(width, POPUP_CONSTANTS.DEFAULTS.MAXWIDTH);
-        let left = rect.right + DEFAULTS.MARGINS.left;
+        let left = rect.right - popupWidth;
         
-        // If popup would go off screen, position it to the left of the button
-        if (left + popupWidth > window.innerWidth) {
-            left = rect.left - popupWidth - DEFAULTS.MARGINS.left;
+        // If popup would go off the left edge of screen, align left edges instead
+        if (left < 0) {
+            left = rect.left;
         }
         
         Object.assign(positionStyle, {

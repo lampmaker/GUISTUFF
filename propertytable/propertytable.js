@@ -204,7 +204,7 @@ class PropertyTable extends Pane {
                         function showPopup() {
                             currentPopup?.remove();
                             const pane = createPopupPane({
-                                positionElement: plusBtn,
+                                positionElement: element, // Use the full control element, not just the plus button
                                 title: property
                             });
                             currentPopup = pane._popup;
