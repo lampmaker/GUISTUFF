@@ -86,7 +86,10 @@ class PropertyTable extends Pane {
                 // Bind normally for primitives and vectors
                 if (key!="expandable"){             // ignore expandable key
                 const propertyOptions = options?.[key] || {};
-                const binding = container.addBinding(objects, key, propertyOptions).on('change', onclick);
+                const binding = container.addBinding(objects, key, propertyOptions);
+                // Store the change callback on the binding for use in popup sliders
+                binding._onChange = onclick;
+                binding.on('change', onclick);
                 addContextMenu(binding, objects, key, propertyOptions);
                 }
             }
@@ -208,6 +211,9 @@ class PropertyTable extends Pane {
                         let currentPopup;
                         const keys = type === 'vec3' ? ['x', 'y', 'z'] : ['x', 'y', 'z', 'w'];
 
+                        // Store original change callback to call from popup sliders
+                        const changeCallback = binding._onChange;
+
                         function showPopup() {
                             currentPopup?.remove();
                             const pane = createPopupPane({
@@ -223,7 +229,16 @@ class PropertyTable extends Pane {
                                     max: 1,
                                     step: 0.001
                                 }, componentOptions);
-                                pane.addBinding(target[property], k, finalOptions);
+                                pane.addBinding(target[property], k, finalOptions).on('change', () => {
+                                    // Call the stored change callback
+                                    if (changeCallback) {
+                                        try {
+                                            changeCallback({ value: target[property] });
+                                        } catch (e) {
+                                            console.warn('Error calling change callback:', e);
+                                        }
+                                    }
+                                });
                             });
                         }
 
