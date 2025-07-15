@@ -464,7 +464,131 @@ properties.bindStructure({
 | **Flexibility** | Fixed folder structure | Dynamic, configurable hierarchy |
 | **Maintainability** | Tightly coupled | Modular, testable |
 
-### Real-World Usage Scenarios
+### Smart Defaults for Dynamic Property Addition
+
+One key concern is how the system handles defaults when users dynamically add properties without explicit configuration. The current system has a good foundation:
+
+**Current Default Handling:**
+```javascript
+// Current system uses predefined defaults
+const TYPE_VALUES = ["text here", 0.0, { x: 0, y: 0 }, { x: 0, y: 0, z: 0 }, { x: 0, y: 0, z: 0, w: 0 }, false];
+const TYPE_OPTIONS = { string: 0, float: 1, vec2: 2, vec3: 3, vec4: 4, boolean: 5 };
+
+// When user adds a vec3, it gets: { x: 0, y: 0, z: 0 } with no additional options
+folder.bindings.objects[params.name] = params.value;
+folder.bindings.options[params.name] = { type: params.type, removable: true };
+```
+
+**Enhanced Default System:**
+```javascript
+// Intelligent defaults based on type detection and context
+class PropertyDefaults {
+  static getDefaults(type, value, context = {}) {
+    const defaults = {
+      vec3: {
+        value: { x: 0, y: 0, z: 0 },
+        options: { 
+          type: 'vec3', 
+          min: -100, 
+          max: 100, 
+          step: 0.1,
+          showSliders: true 
+        }
+      },
+      vec4: {
+        value: { x: 0, y: 0, z: 0, w: 1 },
+        options: { 
+          type: 'vec4', 
+          min: 0, 
+          max: 1, 
+          step: 0.01 
+        }
+      },
+      number: {
+        value: 0.0,
+        options: { 
+          type: 'number', 
+          min: 0, 
+          max: 1, 
+          step: 0.01 
+        }
+      },
+      color: {
+        value: { r: 1, g: 1, b: 1 },
+        options: { type: 'color' }
+      }
+    };
+    
+    // Context-aware defaults
+    if (context.isPosition) {
+      defaults.vec3.options.min = -1000;
+      defaults.vec3.options.max = 1000;
+    }
+    if (context.isNormalized) {
+      defaults.vec3.options.min = -1;
+      defaults.vec3.options.max = 1;
+    }
+    
+    return defaults[type] || { value: null, options: {} };
+  }
+}
+
+// Usage when user adds a property
+properties.addProperty('myVector', 'vec3'); // Gets intelligent vec3 defaults
+properties.addProperty('lightColor', 'color'); // Gets color picker
+properties.addProperty('intensity', 'number'); // Gets slider with 0-1 range
+```
+
+**Context-Aware Defaults:**
+```javascript
+// System learns from existing properties to provide better defaults
+class SmartDefaults {
+  analyzeContext(existingProperties) {
+    // If folder has position/rotation, new vec3s probably need larger ranges
+    // If folder has color properties, new vec3s might be colors (0-1 range)
+    // If folder has normalized values, suggest normalized ranges
+  }
+  
+  suggestDefaults(propertyName, type) {
+    // Name-based suggestions
+    if (propertyName.includes('color') && type === 'vec3') {
+      return { min: 0, max: 1, type: 'color' };
+    }
+    if (propertyName.includes('position') && type === 'vec3') {
+      return { min: -1000, max: 1000, step: 0.1 };
+    }
+    if (propertyName.includes('normal') && type === 'vec3') {
+      return { min: -1, max: 1, step: 0.01 };
+    }
+    
+    return this.getTypeDefaults(type);
+  }
+}
+```
+
+So yes, it would work perfectly! The enhanced system would actually provide **better** defaults than the current system:
+
+1. **Smarter Type Detection** - Automatically infer better ranges and steps
+2. **Context Awareness** - Learn from existing properties in the folder
+3. **Name-Based Hints** - Use property names to suggest appropriate defaults
+4. **Graceful Fallbacks** - Always provide sensible defaults even with no configuration
+
+Example of seamless operation:
+```javascript
+// User clicks + button, selects "vec3", names it "lightDirection"
+// System automatically provides:
+// - Value: { x: 0, y: -1, z: 0 } (common light direction)
+// - Range: [-1, 1] (normalized direction vector)
+// - Step: 0.01 (fine control)
+// - Type: vec3 with inline sliders
+
+// User adds "objectPosition" vec3:
+// - Value: { x: 0, y: 0, z: 0 }
+// - Range: [-100, 100] (world space)
+// - Step: 0.1 (reasonable precision)
+```
+
+---
 
 ```javascript
 // Scenario 1: Game Engine Inspector
