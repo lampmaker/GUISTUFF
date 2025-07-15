@@ -123,6 +123,9 @@ class PropertyTable extends Pane {
         const type = detectBindingType(target, property);
         
         switch (type) {
+            case "color":{
+                options.color={type:"float"}
+            }
             case "number": {
                 options.showSlider = true;
                 const value = target[property];
