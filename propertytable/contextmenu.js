@@ -135,17 +135,21 @@ function _positionPopup(popup, positionElement, x, y, width, height) {
 
     if (positionElement) {
         const rect = positionElement.getBoundingClientRect();
-        let width= rect.width - (DEFAULTS.MARGINS.left + DEFAULTS.MARGINS.right);
-        let left= rect.left + DEFAULTS.MARGINS.left;
-        left+=width;
-        width= Math.min(width, POPUP_CONSTANTS.DEFAULTS.MAXWIDTH);
-        left-=width;
+        // Use a reasonable default width instead of the tiny button width
+        let popupWidth = Math.max(width, POPUP_CONSTANTS.DEFAULTS.MAXWIDTH);
+        let left = rect.right + DEFAULTS.MARGINS.left;
+        
+        // If popup would go off screen, position it to the left of the button
+        if (left + popupWidth > window.innerWidth) {
+            left = rect.left - popupWidth - DEFAULTS.MARGINS.left;
+        }
+        
         Object.assign(positionStyle, {
             left: `${left}px`,
             top: `${rect.bottom + DEFAULTS.MARGINS.top}px`,
-            width: `${width}px`,
-            minWidth: `${width}px`,
-            maxWidth: `${width}px`,
+            width: `${popupWidth}px`,
+            minWidth: `${popupWidth}px`,
+            maxWidth: `${popupWidth}px`,
             transform: 'none'
         });
     } else if (x != null && y != null) {
