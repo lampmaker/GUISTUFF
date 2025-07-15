@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Tests</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .control, .slider-control {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 2%;
+            margin:     0px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .control label, .slider-control label {
+            min-width: 100px;
+            font-weight: bold;
+        }
+        
+        .inputs {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .inputs input {
+            width: 60px;
+            padding: 4px 8px;
+            border: 1px solid #ccc;
+            border:none;
+            background-color: aliceblue;
+            border-radius: 3px;
+        }
+        
+        .slider-control input[type="range"] {
+            flex: 1;
+            margin: 0 10px;
+        }
+        
+        .output {
+            background: #e8f4f8;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 20px 0;
+            font-family: monospace;
+            white-space: pre-line;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        .test-section {
+            margin: 30px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Control Tests</h1>
+    
+    <div class="test-section">
+        <h2>Multi Controls</h2>
+        <div id="multi-controls"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Slider Controls</h2>
+        <div id="slider-controls"></div>
+    </div>
+    
+    <div class="output" id="output">Events will appear here...</div>
+    
+    <script type="module">
+        import { createMultiControl, createSliderControl } from './goei/control.js';
+        
+        const output = document.getElementById('output');
+        const log = (msg) => {
+            output.textContent = new Date().toLocaleTimeString() + ': ' + msg + '\n' + output.textContent;
+        };
+        
+        // Multi Controls
+        const multiContainer = document.getElementById('multi-controls');
+        
+        const positionControl = createMultiControl({
+            label: 'Position',
+            values: [10, 20, 30,90],
+            onChange: (vals) => log(`Position changed: [${vals.join(', ')}]`),
+            onRightClick: (e) => log('Position right-clicked'),
+            onLeftClick: (e) => log('Position left-clicked'),
+            onValueClick: (e, index, value) => log(`Position value ${index} clicked: ${value}`)
+        });
+        
+        const colorControl = createMultiControl({
+            label: 'RGB Color',
+            values: [255, 128, 64],
+            onChange: (vals) => log(`Color changed: rgb(${vals.join(', ')})`),
+            onValueClick: (e, index, value) => log(`Color channel ${index} clicked`)
+        });
+        
+        const nameControl = createMultiControl({
+            label: 'Name Parts',
+            values: ['John', 'Doe'],
+            onChange: (vals) => log(`Name changed: ${vals.join(' ')}`),
+        });
+        
+        const fullWidthInputs = createMultiControl({
+            label: '',  // No label - full width
+            values: [1.5, 2.0, 3.14],
+            onChange: (vals) => log(`Full width values: [${vals.join(', ')}]`),
+        });
+        
+        multiContainer.appendChild(positionControl);
+        multiContainer.appendChild(colorControl);
+        multiContainer.appendChild(nameControl);
+        multiContainer.appendChild(fullWidthInputs);
+        
+        // Slider Controls
+        const sliderContainer = document.getElementById('slider-controls');
+        
+        const opacitySlider = createSliderControl({
+            label: 'Opacity',
+            value: 50,
+            min: 0,
+            max: 100,
+            onChange: (val) => log(`Opacity: ${val}%`)
+        });
+        
+        const volumeSlider = createSliderControl({
+            label: 'Volume',
+            value: 75,
+            min: 0,
+            max: 100,
+            onChange: (val) => log(`Volume: ${val}`)
+        });
+        
+        const temperatureSlider = createSliderControl({
+            label: 'Temperature',
+            value: 20,
+            min: -10,
+            max: 50,
+            onChange: (val) => log(`Temperature: ${val}°C`)
+        });
+        
+        const fullWidthSlider = createSliderControl({
+            label: '',  // No label - full width
+            value: 33,
+            min: 0,
+            max: 100,
+            onChange: (val) => log(`Full width slider: ${val}`)
+        });
+        
+        sliderContainer.appendChild(opacitySlider);
+        sliderContainer.appendChild(volumeSlider);
+        sliderContainer.appendChild(temperatureSlider);
+        sliderContainer.appendChild(fullWidthSlider);
+        
+        // Test update methods after 3 seconds
+        setTimeout(() => {
+            log('--- Testing update methods ---');
+            positionControl.updateValues([100, 200, 300]);
+            opacitySlider.updateValue(25);
+            fullWidthInputs.updateValues([99.9, 88.8, 77.7]);
+            fullWidthSlider.updateValue(75);
+            log('Controls updated programmatically');
+        }, 3000);
+        
+        log('Test page loaded - try interacting with the controls!');
+    </script>
+</body>
+</html>
