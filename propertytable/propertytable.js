@@ -217,7 +217,12 @@ class PropertyTable extends Pane {
                             currentPopup = pane._popup;
                             keys.forEach(k => {
                                 const componentOptions = options?.[k] || {};
-                                const finalOptions = Object.assign({ label: k }, componentOptions);
+                                const finalOptions = Object.assign({ 
+                                    label: k,
+                                    min: 0,
+                                    max: 1,
+                                    step: 0.001
+                                }, componentOptions);
                                 pane.addBinding(target[property], k, finalOptions);
                             });
                         }
