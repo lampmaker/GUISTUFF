@@ -85,7 +85,7 @@ class PropertyTable extends Pane {
             } else {
                 // Bind normally for primitives and vectors
                 if (key!="expandable"){             // ignore expandable key
-                const binding = container.addBinding(objects, key, options?.[key] || {}).on('click', onclick);
+                const binding = container.addBinding(objects, key, options?.[key] || {}).on('change', onclick);
                 addContextMenu(binding, objects, key, options);
                 }
             }
@@ -196,7 +196,7 @@ class PropertyTable extends Pane {
         const folder = originalAddFolder.call(context, params);
          console.log("add folder", params);
         this._enhanceFolderWithBindings(folder);
-        if (params?.object) folder.bindControls(params.object, params.options || {});
+        if (params?.object) folder.bindControls(params.object, params.options || {},params?.onChange);
 
         if (params?.expandable || params?.object?.expandable) {
             this._makeExpandableFolder(folder, params);
