@@ -1,114 +1,88 @@
-// Copyright (c) 2025 Matthijs Keuper
-// SPDX-License-Identifier: MIT
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PropertyTable v2 - Auto-Detection Demo</title>
+    <style>
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .demo-section {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .controls-grid {
+            display: grid;
+            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        
+        .data-display {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            color: #c9d1d9;
+        }
+    </style>
+    <link rel="stylesheet" href="./themes/default.css">
+</head>
+<body>
+    <div class="container">
+        <h1>PropertyTable v2 - Auto-Detection Demo</h1>
+        <p style="color: #8b949e;">This demo shows NumberControl automatically detecting scalar values, arrays, and objects to create appropriate interfaces.</p>
+        
+        <div class="demo-section">
+            <h2>Auto-Detecting Controls</h2>
+            <div class="controls-grid" id="controls-container">
+                <!-- Controls will be inserted here -->
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Live Data</h2>
+            <div class="data-display" id="data-display">
+                <!-- Data will be shown here -->
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h3>Test Cases:</h3>
+            <ul style="color: #8b949e;">
+                <li><strong>intensity</strong> (scalar): Regular number control</li>
+                <li><strong>position</strong> (array [x,y]): Auto-detects 2-component vector</li>
+                <li><strong>color</strong> (object {r,g,b}): Auto-detects 3-component vector</li>
+                <li><strong>size</strong> (array [x,y,z]): Auto-detects 3-component vector</li>
+                <li><strong>rotation</strong> (array [x,y,z,w]): Auto-detects 4-component vector</li>
+            </ul>
+            
+            <h3>Interaction:</h3>
+            <ul style="color: #8b949e;">
+                <li><strong>Click text input</strong> → Opens popup slider</li>
+                <li><strong>Right-click</strong> → Context menu with PropertyTable</li>
+                <li><strong>Vector components</strong> → Individual controls for each component</li>
+            </ul>
+        </div>
+    </div>
 
-/**
- * Simple demo to test the NumberControl
- */
-import { NumberControl } from './controls/NumberControl.js';
-
-// Test object
-const testObject = {
-    intensity: 0.5,
-    roughness: 0.3,
-    metallic: 0.0,
-    speed: 10.0
-};
-
-// Create container
-const container = document.createElement('div');
-container.style.width = '400px';
-container.style.margin = '20px';
-container.style.fontFamily = 'Arial, sans-serif';
-document.body.appendChild(container);
-
-// Add title
-const title = document.createElement('h2');
-title.textContent = 'PropertyTable v2 - NumberControl Demo';
-title.style.color = '#e0e0e0';
-title.style.marginBottom = '20px';
-container.appendChild(title);
-
-// Load CSS
-const link = document.createElement('link');
-link.rel = 'stylesheet';
-link.href = './themes/default.css';
-document.head.appendChild(link);
-
-// Create controls with different modes
-const controls = [
-    new NumberControl(testObject, 'intensity', {
-        label: 'Intensity',
-        mode: 'input+slider',
-        min: 0,
-        max: 1,
-        step: 0.01
-    }),
-    
-    new NumberControl(testObject, 'roughness', {
-        label: 'Roughness',
-        mode: 'knob',
-        min: 0,
-        max: 1,
-        step: 0.01,
-        size: 'compact'
-    }),
-    
-    new NumberControl(testObject, 'metallic', {
-        label: 'Metallic',
-        mode: 'slider',
-        min: 0,
-        max: 1,
-        step: 0.01
-    }),
-    
-    new NumberControl(testObject, 'speed', {
-        label: 'Speed',
-        mode: 'input',
-        min: 0,
-        max: 100,
-        step: 0.1,
-        precision: 1
-    })
-];
-
-// Add controls to container
-controls.forEach(control => {
-    container.appendChild(control.getElement());
-    
-    // Add change listener
-    control.onChange((event) => {
-        console.log(`${event.property} changed from ${event.oldValue} to ${event.value}`);
-        updateDisplay();
-    });
-});
-
-// Add live data display
-const dataDisplay = document.createElement('pre');
-dataDisplay.style.background = '#1a1a1a';
-dataDisplay.style.color = '#e0e0e0';
-dataDisplay.style.padding = '10px';
-dataDisplay.style.borderRadius = '4px';
-dataDisplay.style.marginTop = '20px';
-dataDisplay.style.fontSize = '12px';
-container.appendChild(dataDisplay);
-
-function updateDisplay() {
-    dataDisplay.textContent = JSON.stringify(testObject, null, 2);
-}
-
-// Initial display
-updateDisplay();
-
-// Add instructions
-const instructions = document.createElement('div');
-instructions.innerHTML = `
-<h3 style="color: #e0e0e0; margin-top: 20px;">Instructions:</h3>
-<ul style="color: #a0a0a0; font-size: 14px;">
-  <li><strong>Right-click</strong> any control to open context menu</li>
-  <li><strong>Knob:</strong> Click and drag to rotate</li>
-  <li><strong>Slider:</strong> Drag to change value</li>
-  <li><strong>Input:</strong> Type or use arrow keys</li>
-  <li><strong>Context Menu:</strong> Change min/max/step and interaction mode</li>
-</ul>
-`;
-container.appendChild(instructions);
+    <script type="module" src="./demo.js"></script>
+</body>
+</html>

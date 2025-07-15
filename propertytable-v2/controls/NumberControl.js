@@ -25,9 +25,51 @@ export class NumberControl extends PropertyControl {
         };
     }
 
+    init() {
+        // Auto-detect if this is a vector control based on the value
+        this.detectVectorMode();
+        super.init();
+    }
+
+    detectVectorMode() {
+        const value = this.target[this.property];
+        
+        if (Array.isArray(value)) {
+            // Handle arrays: [x, y] or [x, y, z] or [x, y, z, w]
+            this.isVector = true;
+            this.componentCount = value.length;
+            this.componentLabels = this.getDefaultArrayLabels(value.length);
+            this.componentKeys = Array.from({length: value.length}, (_, i) => i);
+        } else if (value && typeof value === 'object') {
+            // Handle objects: {x: 1, y: 2} or {r: 1, g: 0, b: 0}
+            this.isVector = true;
+            this.componentKeys = Object.keys(value);
+            this.componentCount = this.componentKeys.length;
+            this.componentLabels = this.componentKeys.map(key => key.toUpperCase());
+        } else {
+            // Regular scalar value
+            this.isVector = false;
+            this.componentCount = 1;
+        }
+    }
+
+    getDefaultArrayLabels(count) {
+        const labelSets = {
+            2: ['X', 'Y'],
+            3: ['X', 'Y', 'Z'],
+            4: ['X', 'Y', 'Z', 'W']
+        };
+        return labelSets[count] || Array.from({length: count}, (_, i) => `${i}`);
+    }
+
     createElement() {
         this.element = document.createElement('div');
-        this.element.className = `prop-control prop-number prop-number--${this.options.mode} prop-number--${this.options.size}`;
+        
+        if (this.isVector) {
+            this.element.className = `prop-control prop-vector prop-vector--${this.componentCount} prop-vector--${this.options.mode}`;
+        } else {
+            this.element.className = `prop-control prop-number prop-number--${this.options.mode} prop-number--${this.options.size}`;
+        }
         
         // Create label
         this.labelElement = document.createElement('label');
@@ -36,10 +78,14 @@ export class NumberControl extends PropertyControl {
         
         // Create control container
         this.controlContainer = document.createElement('div');
-        this.controlContainer.className = 'prop-control-container';
+        this.controlContainer.className = this.isVector ? 'prop-vector-container' : 'prop-control-container';
         
         // Create the appropriate control based on mode
-        this.createControlForMode();
+        if (this.isVector) {
+            this.createVectorControls();
+        } else {
+            this.createControlForMode();
+        }
         
         this.element.appendChild(this.labelElement);
         this.element.appendChild(this.controlContainer);
@@ -51,6 +97,113 @@ export class NumberControl extends PropertyControl {
                 this.showContextMenu(e);
             });
         }
+    }
+
+    createVectorControls() {
+        this.componentElements = [];
+        this.componentSliders = [];
+        this.componentKnobs = [];
+        
+        for (let i = 0; i < this.componentCount; i++) {
+            const componentContainer = document.createElement('div');
+            componentContainer.className = 'prop-vector-component';
+            
+            // Create component label
+            const componentLabel = document.createElement('label');
+            componentLabel.className = 'prop-component-label';
+            componentLabel.textContent = this.componentLabels[i];
+            componentContainer.appendChild(componentLabel);
+            
+            // Create controls for this component based on mode
+            this.createComponentControls(componentContainer, i);
+            
+            this.controlContainer.appendChild(componentContainer);
+        }
+    }
+
+    createComponentControls(container, index) {
+        switch (this.options.mode) {
+            case 'input':
+                this.createComponentInput(container, index);
+                break;
+            case 'slider':
+                this.createComponentSlider(container, index);
+                break;
+            case 'knob':
+                this.createComponentKnob(container, index);
+                break;
+            case 'input+slider':
+                this.createComponentInput(container, index);
+                this.createComponentSlider(container, index);
+                break;
+            default:
+                this.createComponentInput(container, index);
+        }
+    }
+
+    createComponentInput(container, index) {
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'prop-number-input prop-component-input';
+        input.title = 'Click to open slider popup';
+        
+        // Add event listeners
+        input.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            if (!isNaN(value)) {
+                this.setComponentValue(index, value);
+            }
+        });
+        
+        input.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.showComponentSliderPopup(index);
+        });
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const increment = e.shiftKey ? this.options.step * 10 : this.options.step;
+                const delta = e.key === 'ArrowUp' ? increment : -increment;
+                const currentValue = this.getComponentValue(index);
+                const newValue = Math.max(this.options.min, 
+                    Math.min(this.options.max, currentValue + delta));
+                this.setComponentValue(index, newValue);
+            }
+            if (e.key === 'Enter') {
+                input.blur();
+            }
+        });
+        
+        container.appendChild(input);
+        this.componentElements[index] = input;
+    }
+
+    createComponentSlider(container, index) {
+        const slider = document.createElement('input');
+        slider.type = 'range';
+        slider.className = 'prop-number-slider prop-component-slider';
+        slider.min = this.options.min;
+        slider.max = this.options.max;
+        slider.step = this.options.step;
+        
+        slider.addEventListener('input', (e) => {
+            this.setComponentValue(index, parseFloat(e.target.value));
+        });
+        
+        container.appendChild(slider);
+        this.componentSliders[index] = slider;
+    }
+
+    createComponentKnob(container, index) {
+        const knobContainer = document.createElement('div');
+        knobContainer.className = 'prop-number-knob prop-component-knob';
+        
+        // Create SVG knob (simplified version of createSVGKnob)
+        const size = this.options.size === 'compact' ? 20 : this.options.size === 'large' ? 36 : 28;
+        this.createComponentSVGKnob(knobContainer, index, size);
+        
+        container.appendChild(knobContainer);
     }
 
     createControlForMode() {
@@ -210,58 +363,284 @@ export class NumberControl extends PropertyControl {
         });
     }
 
+    getComponentValue(index) {
+        if (Array.isArray(this.value)) {
+            return this.value[index] || 0;
+        } else if (this.value && typeof this.value === 'object') {
+            return this.value[this.componentKeys[index]] || 0;
+        }
+        return 0;
+    }
+
+    setComponentValue(index, newValue) {
+        // Ensure we have a proper value structure
+        if (!this.value) {
+            if (Array.isArray(this.target[this.property])) {
+                this.value = [...this.target[this.property]];
+            } else {
+                this.value = {...this.target[this.property]};
+            }
+        }
+
+        const oldValue = this.isVector ? [...(Array.isArray(this.value) ? this.value : Object.values(this.value))] : this.value;
+
+        // Update the component
+        if (Array.isArray(this.value)) {
+            this.value[index] = newValue;
+        } else if (this.value && typeof this.value === 'object') {
+            this.value[this.componentKeys[index]] = newValue;
+        }
+
+        // Update target object
+        this.target[this.property] = this.value;
+        
+        // Update display
+        this.updateElement();
+        
+        // Emit change event
+        this.emitChange(this.value, oldValue);
+    }
+
+    createComponentSVGKnob(container, index, size) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', size);
+        svg.setAttribute('height', size);
+        svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+        svg.style.cursor = 'grab';
+        
+        // Background circle
+        const bgCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        bgCircle.setAttribute('cx', size/2);
+        bgCircle.setAttribute('cy', size/2);
+        bgCircle.setAttribute('r', size/2 - 2);
+        bgCircle.setAttribute('fill', 'none');
+        bgCircle.setAttribute('stroke', '#444');
+        bgCircle.setAttribute('stroke-width', '1');
+        
+        // Value arc
+        const valueArc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        valueArc.setAttribute('fill', 'none');
+        valueArc.setAttribute('stroke', '#007acc');
+        valueArc.setAttribute('stroke-width', '2');
+        valueArc.setAttribute('stroke-linecap', 'round');
+        
+        // Indicator line
+        const indicator = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        indicator.setAttribute('x1', size/2);
+        indicator.setAttribute('y1', size/2);
+        indicator.setAttribute('stroke', '#007acc');
+        indicator.setAttribute('stroke-width', '1');
+        indicator.setAttribute('stroke-linecap', 'round');
+        
+        svg.appendChild(bgCircle);
+        svg.appendChild(valueArc);
+        svg.appendChild(indicator);
+        
+        container.appendChild(svg);
+        
+        // Store references for updates
+        if (!this.componentKnobs) this.componentKnobs = [];
+        this.componentKnobs[index] = { svg, valueArc, indicator, size };
+        
+        // Setup interaction
+        this.setupComponentKnobInteraction(index, svg);
+    }
+
+    setupComponentKnobInteraction(index, svg) {
+        let isDragging = false;
+        let startAngle = 0;
+        let startValue = 0;
+        
+        const getAngleFromMouse = (e) => {
+            const rect = svg.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const angle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
+            return angle;
+        };
+        
+        svg.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startAngle = getAngleFromMouse(e);
+            startValue = this.getComponentValue(index);
+            
+            svg.style.cursor = 'grabbing';
+            svg.style.transform = 'scale(1.2)';
+            svg.style.transition = 'transform 0.1s ease';
+            
+            e.preventDefault();
+        });
+        
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const currentAngle = getAngleFromMouse(e);
+            const angleDiff = currentAngle - startAngle;
+            const sensitivity = 0.005;
+            const valueChange = angleDiff * sensitivity * (this.options.max - this.options.min);
+            
+            let newValue = startValue + valueChange;
+            newValue = Math.max(this.options.min, Math.min(this.options.max, newValue));
+            newValue = Math.round(newValue / this.options.step) * this.options.step;
+            
+            this.setComponentValue(index, newValue);
+        });
+        
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                svg.style.cursor = 'grab';
+                svg.style.transform = 'scale(1)';
+                setTimeout(() => { svg.style.transition = ''; }, 150);
+            }
+        });
+    }
+
+    async showComponentSliderPopup(index) {
+        const rect = this.element.getBoundingClientRect();
+        
+        const popupData = {
+            [this.componentLabels[index]]: {
+                type: 'number',
+                mode: 'slider',
+                value: this.getComponentValue(index),
+                min: this.options.min,
+                max: this.options.max,
+                step: this.options.step,
+                precision: this.options.precision,
+                onChange: (newValue) => {
+                    this.setComponentValue(index, newValue);
+                }
+            }
+        };
+
+        const popup = await PropertyTable.createPopup(popupData, {
+            x: rect.left,
+            y: rect.bottom + 5,
+            width: rect.width,
+            onClose: () => {}
+        });
+    }
+
     setupEvents() {
         super.setupEvents();
         
-        if (this.inputElement) {
-            this.inputElement.addEventListener('input', (e) => {
-                const value = parseFloat(e.target.value);
-                if (!isNaN(value)) {
-                    this.setValue(value);
-                }
-            });
+        // For scalar controls, setup original events
+        if (!this.isVector) {
+            if (this.inputElement) {
+                this.inputElement.addEventListener('input', (e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value)) {
+                        this.setValue(value);
+                    }
+                });
+                
+                // Click to open slider popup
+                this.inputElement.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.showSliderPopup();
+                });
+                
+                this.inputElement.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        const increment = e.shiftKey ? this.options.step * 10 : this.options.step;
+                        const delta = e.key === 'ArrowUp' ? increment : -increment;
+                        const newValue = Math.max(this.options.min, 
+                            Math.min(this.options.max, this.value + delta));
+                        this.setValue(newValue);
+                    }
+                    if (e.key === 'Enter') {
+                        this.inputElement.blur();
+                    }
+                });
+            }
             
-            // Click to open slider popup
-            this.inputElement.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.showSliderPopup();
-            });
-            
-            this.inputElement.addEventListener('keydown', (e) => {
-                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const increment = e.shiftKey ? this.options.step * 10 : this.options.step;
-                    const delta = e.key === 'ArrowUp' ? increment : -increment;
-                    const newValue = Math.max(this.options.min, 
-                        Math.min(this.options.max, this.value + delta));
-                    this.setValue(newValue);
-                }
-                if (e.key === 'Enter') {
-                    this.inputElement.blur();
-                }
-            });
+            if (this.sliderElement) {
+                this.sliderElement.addEventListener('input', (e) => {
+                    this.setValue(parseFloat(e.target.value));
+                });
+            }
         }
-        
-        if (this.sliderElement) {
-            this.sliderElement.addEventListener('input', (e) => {
-                this.setValue(parseFloat(e.target.value));
-            });
-        }
+        // Vector component events are handled in createComponentControls
     }
 
     updateElement() {
-        const displayValue = parseFloat(this.value.toFixed(this.options.precision));
-        
-        if (this.inputElement) {
-            this.inputElement.value = displayValue;
+        if (this.isVector) {
+            // Update vector components
+            for (let i = 0; i < this.componentCount; i++) {
+                const value = this.getComponentValue(i);
+                const displayValue = parseFloat(value.toFixed(this.options.precision));
+                
+                // Update input
+                if (this.componentElements && this.componentElements[i]) {
+                    this.componentElements[i].value = displayValue;
+                }
+                
+                // Update slider
+                if (this.componentSliders && this.componentSliders[i]) {
+                    this.componentSliders[i].value = value;
+                }
+                
+                // Update knob
+                if (this.componentKnobs && this.componentKnobs[i]) {
+                    this.updateComponentKnobVisual(i);
+                }
+            }
+        } else {
+            // Update scalar control
+            const displayValue = parseFloat(this.value.toFixed(this.options.precision));
+            
+            if (this.inputElement) {
+                this.inputElement.value = displayValue;
+            }
+            
+            if (this.sliderElement) {
+                this.sliderElement.value = this.value;
+            }
+            
+            if (this.svg) {
+                this.updateKnobVisual();
+            }
         }
+    }
+
+    updateComponentKnobVisual(index) {
+        const knob = this.componentKnobs[index];
+        if (!knob) return;
         
-        if (this.sliderElement) {
-            this.sliderElement.value = this.value;
-        }
+        const { svg, valueArc, indicator, size } = knob;
+        const center = size / 2;
+        const radius = size / 2 - 3;
         
-        if (this.svg) {
-            this.updateKnobVisual();
+        const value = this.getComponentValue(index);
+        const normalized = (value - this.options.min) / (this.options.max - this.options.min);
+        const angle = normalized * 300 - 150;
+        const radians = (angle * Math.PI) / 180;
+        
+        // Update indicator line
+        const x2 = center + Math.cos(radians) * radius * 0.7;
+        const y2 = center + Math.sin(radians) * radius * 0.7;
+        indicator.setAttribute('x2', x2);
+        indicator.setAttribute('y2', y2);
+        
+        // Update value arc
+        if (normalized > 0) {
+            const startAngle = -150;
+            const endAngle = startAngle + (normalized * 300);
+            const startRadians = (startAngle * Math.PI) / 180;
+            const endRadians = (endAngle * Math.PI) / 180;
+            
+            const x1 = center + Math.cos(startRadians) * radius;
+            const y1 = center + Math.sin(startRadians) * radius;
+            const x2 = center + Math.cos(endRadians) * radius;
+            const y2 = center + Math.sin(endRadians) * radius;
+            
+            const largeArcFlag = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
+            const pathData = `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
+            valueArc.setAttribute('d', pathData);
+        } else {
+            valueArc.setAttribute('d', '');
         }
     }
 

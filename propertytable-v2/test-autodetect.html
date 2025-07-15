@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auto-Detection Test</title>
+    <style>body { background: #121212; color: white; font-family: monospace; }</style>
+</head>
+<body>
+    <h1>NumberControl Auto-Detection Test</h1>
+    <div id="log"></div>
+    
+    <script type="module">
+        import { NumberControl } from './controls/NumberControl.js';
+        
+        const log = document.getElementById('log');
+        function logger(msg) {
+            log.innerHTML += msg + '<br>';
+            console.log(msg);
+        }
+        
+        const testData = {
+            scalar: 0.5,
+            vec2: [1, 2],
+            vec3: {x: 1, y: 2, z: 3},
+            vec4: [1, 2, 3, 4]
+        };
+        
+        logger('Testing auto-detection...');
+        
+        try {
+            const controls = [
+                new NumberControl(testData, 'scalar', { label: 'Scalar' }),
+                new NumberControl(testData, 'vec2', { label: 'Vec2' }),
+                new NumberControl(testData, 'vec3', { label: 'Vec3' }),
+                new NumberControl(testData, 'vec4', { label: 'Vec4' })
+            ];
+            
+            controls.forEach(control => {
+                logger(`${control.property}: ${control.isVector ? `vector (${control.componentCount})` : 'scalar'}`);
+                
+                if (control.isVector) {
+                    logger(`  Labels: ${control.componentLabels.join(', ')}`);
+                }
+            });
+            
+            logger('Auto-detection test completed successfully!');
+        } catch (error) {
+            logger('Error: ' + error.message);
+            logger('Stack: ' + error.stack);
+        }
+    </script>
+</body>
+</html>

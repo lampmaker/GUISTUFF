@@ -359,3 +359,46 @@
   align-items: center;
   justify-content: space-between;
 }
+
+/* Vector Component Styles */
+.prop-vector-container {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 1;
+}
+
+.prop-component-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.prop-component-label {
+  font-size: 11px;
+  color: var(--prop-text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  min-width: 12px;
+  text-align: center;
+  user-select: none;
+}
+
+.prop-component-input {
+  width: 60px;
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+.prop-component-slider {
+  flex: 1;
+  min-width: 80px;
+}
+
+.prop-component-knob {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
