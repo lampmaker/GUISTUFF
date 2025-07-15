@@ -58,7 +58,7 @@ class PropertyTable extends Pane {
     // This method checks if the object is a vector type (vec2, vec3, vec4).. used for binding; if it is a vector, it will use the appropriate binding type,
     // if it is another object, it will create a folder and bind the properties of the object to the folder
     isVector(o) {
-        return ['xy', 'xyz', 'wxyz'].includes(Object.keys(o).sort().join(''));
+        return ['xy', 'xyz', 'wxyz','bgr','abgr'].includes(Object.keys(o).sort().join(''));
     }
 
     //========================================================================================================================================

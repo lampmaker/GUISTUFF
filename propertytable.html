@@ -74,12 +74,13 @@
             vec2: { x: 0.1, y: 0.2 },
             vec3: { x: 0.1, y: 0.2, z: 0.3 },
             vec4: { x: 0.1, y: 0.2, z: 0.3, w: 0.4 },
+            color: {r:0,g:0,b:1,a:1},
             nested:{
                 expandable: true,
                 anotherfloat:4.56,
                 vec2: { x: 0.5, y: 0.6 },
             },
-            color: '#ff0000',
+            
             color2: '#00ff00',
             check: false,
             text: "Hello World\n new line ",
@@ -119,7 +120,7 @@ void main() {
             C: { x: 0.1, y: 0.2 },
             vec3: { x: 0.1, y: 0.2, z: 0.3 },
             vec4: { x: 0.1, y: 0.2, z: 0.3, w: 0.4 },
-            color: '#ff0000',
+            color: {r:0,g:0,b:1,a:1}
         }
 
         let options = {
@@ -128,7 +129,7 @@ void main() {
             vec2: { x: { min: -10, max: 20, step: 0.01 }, y: { min: -10, max: 10, step: 0.01 } },
             vec3: { x: { min: -10, max: 20, step: 0.01 }, y: { min: -10, max: 10, step: 0.01 }, z: { min: -10, max: 10, step: 0.01 } },
             vec4: { x: { min: -10, max: 10, step: 0.01 }, y: { min: -10, max: 10, step: 0.01 }, z: { min: -10, max: 10, step: 0.01 }, w: { min: 0, max: 1, step: 0.01 } },
-            color: { picker: { mode: 'hex' } },
+            color: {color: {type: 'float'}},
             text: { multiline: true, rows: 5 },
             glslShader: {
                 multiline: true,
@@ -147,18 +148,19 @@ void main() {
             object: fixedProperties,
             options: options,
             expanded: true,
-            onChange:_=>console.log("change")
+            onChange:_=>console.log(fixedProperties.color)
         })
 
         // Make the folder expandable after creation using the public method
-      
+  /*    
         MENU1.addFolder({
             title: "flexible Properties",
             expandable: true,
             object: flexible,
             options: options
         })
-
+            */
+/*
 MENU1.addBinding(fixedProperties,"glslWithLineNumbers", {
                 multiline: true,
                 rows: 12,
@@ -168,7 +170,7 @@ MENU1.addBinding(fixedProperties,"glslWithLineNumbers", {
             },).on('change', (value) => {
                 console.log("GLSL with line numbers changed:", value);
             });
-
+*/
         Object.assign(MENU1.element.style, { fontFamily: 'Arial', fontSize: '13px', width: '100%' })
 
 

@@ -231,6 +231,8 @@ export function detectBindingType(target, property) {
         const keys = Object.keys(value);
         const hasKeys = (requiredKeys) => requiredKeys.every(key => keys.includes(key));
         
+        if (hasKeys(['r', 'g', 'b', 'a'])) return 'color';
+        if (hasKeys(['r', 'g', 'b'])) return 'color';        
         if (hasKeys(['x', 'y', 'z', 'w'])) return 'vec4';
         if (hasKeys(['x', 'y', 'z'])) return 'vec3';
         if (hasKeys(['x', 'y'])) return 'vec2';
