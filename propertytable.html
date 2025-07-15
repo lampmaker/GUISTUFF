@@ -136,14 +136,9 @@ void main() {
                 wordwrap: false,
                 highlighting: 'glsl'
             },
-            glslWithLineNumbers: {
-                multiline: true,
-                rows: 12,
-                wordwrap: false,
-                highlighting: 'glsl',
-                lineNumbers: true
-            },
+           
         }
+
 
 
         const fixedFolder = MENU1.addFolder({
@@ -164,7 +159,15 @@ void main() {
             options: options
         })
 
-
+MENU1.addBinding(fixedProperties,"glslWithLineNumbers", {
+                multiline: true,
+                rows: 12,
+                wordwrap: false,
+                highlighting: 'glsl',
+                lineNumbers: true
+            },).on('change', (value) => {
+                console.log("GLSL with line numbers changed:", value);
+            });
 
         Object.assign(MENU1.element.style, { fontFamily: 'Arial', fontSize: '13px', width: '100%' })
 

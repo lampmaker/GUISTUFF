@@ -193,6 +193,12 @@ export const demoCallbacks = {
         logEvent(`<span style="color:#4caf50;">Node:</span> ${expanded ? 'expanded' : 'collapsed'} → ${path}`);
     },
 
+    onNodeAdd: (node, newChild, action, childType, logEvent, updateJsonViewer) => {
+        logEvent(`<span style="color:#4caf50;">Node Added:</span> '${newChild.label}' (${childType}) to '${node.label}'`);
+        updateJsonViewer();
+    },
+        // Notify via callbac
+
     onToggleClick: (path, property, newValue, oldValue, node, type, logEvent, updateJsonViewer) => {
         if (type === 'add_child') {
             logEvent(`<span style="color:#4caf50;">Added:</span> New child '${node.label}' (type: ${node.type})`);
