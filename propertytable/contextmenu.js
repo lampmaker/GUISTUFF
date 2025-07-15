@@ -355,7 +355,10 @@ function _addVectorControls(pane, binding, options, type) {
         pane,
         components,
         (comp) => {
-            options[comp] = options[comp] || {};
+            // Ensure component options exist, but don't overwrite existing ones
+            if (!options[comp]) {
+                options[comp] = {};
+            }
             return { 
                 min: options[comp].min ?? DEFAULT_MIN,
                 max: options[comp].max ?? DEFAULT_MAX,

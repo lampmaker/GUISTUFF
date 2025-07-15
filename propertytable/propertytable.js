@@ -85,8 +85,9 @@ class PropertyTable extends Pane {
             } else {
                 // Bind normally for primitives and vectors
                 if (key!="expandable"){             // ignore expandable key
-                const binding = container.addBinding(objects, key, options?.[key] || {}).on('change', onclick);
-                addContextMenu(binding, objects, key, options);
+                const propertyOptions = options?.[key] || {};
+                const binding = container.addBinding(objects, key, propertyOptions).on('change', onclick);
+                addContextMenu(binding, objects, key, propertyOptions);
                 }
             }
         });
@@ -208,7 +209,9 @@ class PropertyTable extends Pane {
                             });
                             currentPopup = pane._popup;
                             keys.forEach(k => {
-                                pane.addBinding(target[property], k, Object.assign({ label: k }, options?.[k] || {}));
+                                const componentOptions = options?.[k] || {};
+                                const finalOptions = Object.assign({ label: k }, componentOptions);
+                                pane.addBinding(target[property], k, finalOptions);
                             });
                         }
 
