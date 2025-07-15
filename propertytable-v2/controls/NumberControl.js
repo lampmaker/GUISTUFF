@@ -6,6 +6,7 @@
  * Supports different interaction modes: input, slider, knob
  */
 import { PropertyControl } from '../core/PropertyControl.js';
+import { PropertyTable } from '../core/PropertyTable.js';
 
 export class NumberControl extends PropertyControl {
     constructor(target, property, options = {}) {
@@ -301,96 +302,44 @@ export class NumberControl extends PropertyControl {
         }
     }
 
-    showSliderPopup() {
+    async showSliderPopup() {
         // Remove existing popup
         this.removeSliderPopup();
         
-        // Create popup container
-        this.sliderPopup = document.createElement('div');
-        this.sliderPopup.className = 'prop-slider-popup';
-        
-        // Position below the control and match the full control width
+        // Get element position for positioning
         const rect = this.element.getBoundingClientRect();
-        this.sliderPopup.style.position = 'absolute';
-        this.sliderPopup.style.top = (rect.bottom + 4) + 'px';
-        this.sliderPopup.style.left = rect.left + 'px';
-        this.sliderPopup.style.width = rect.width + 'px';
-        this.sliderPopup.style.zIndex = '1000';
         
-        // Create slider
-        this.popupSlider = document.createElement('input');
-        this.popupSlider.type = 'range';
-        this.popupSlider.className = 'prop-number-slider'; // Use same class as regular slider
-        this.popupSlider.min = this.options.min;
-        this.popupSlider.max = this.options.max;
-        this.popupSlider.step = this.options.step;
-        this.popupSlider.value = this.value;
-        
-        // Create value display
-        this.popupValueDisplay = document.createElement('div');
-        this.popupValueDisplay.className = 'prop-popup-value';
-        this.popupValueDisplay.textContent = this.value.toFixed(this.options.precision);
-        
-        this.sliderPopup.appendChild(this.popupSlider);
-        this.sliderPopup.appendChild(this.popupValueDisplay);
-        
-        document.body.appendChild(this.sliderPopup);
-        
-        // Setup slider events - same as regular slider
-        this.popupSlider.addEventListener('input', (e) => {
-            const value = parseFloat(e.target.value);
-            this.setValue(value);
-            this.popupValueDisplay.textContent = value.toFixed(this.options.precision);
-        });
-        
-        // Add keyboard support like regular controls
-        this.popupSlider.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-                e.preventDefault();
-                const increment = e.shiftKey ? this.options.step * 10 : this.options.step;
-                const delta = e.key === 'ArrowUp' ? increment : -increment;
-                const newValue = Math.max(this.options.min, 
-                    Math.min(this.options.max, this.value + delta));
-                this.setValue(newValue);
-                this.popupSlider.value = newValue;
-                this.popupValueDisplay.textContent = newValue.toFixed(this.options.precision);
+        // Create popup data for PropertyTable
+        const popupData = {
+            [this.options.label || 'Value']: {
+                type: 'number',
+                mode: 'slider',
+                value: this.value,
+                min: this.options.min,
+                max: this.options.max,
+                step: this.options.step,
+                precision: this.options.precision,
+                onChange: (newValue) => {
+                    this.setValue(newValue);
+                }
+            }
+        };
+
+        // Create popup using PropertyTable
+        this.sliderPopup = await PropertyTable.createPopup(popupData, {
+            x: rect.left,
+            y: rect.bottom + 5,
+            width: rect.width,
+            onClose: () => {
+                this.sliderPopup = null;
             }
         });
-        
-        // Close on click outside or escape
-        setTimeout(() => {
-            document.addEventListener('click', this.handleSliderPopupClose);
-            document.addEventListener('keydown', this.handleSliderPopupKeydown);
-        }, 0);
-        
-        // Focus the slider for immediate keyboard control
-        this.popupSlider.focus();
     }
 
     removeSliderPopup() {
         if (this.sliderPopup) {
-            document.removeEventListener('click', this.handleSliderPopupClose);
-            document.removeEventListener('keydown', this.handleSliderPopupKeydown);
-            
-            if (this.sliderPopup.parentNode) {
-                this.sliderPopup.parentNode.removeChild(this.sliderPopup);
-            }
+            this.sliderPopup.dispose();
             this.sliderPopup = null;
-            this.popupSlider = null;
-            this.popupValueDisplay = null;
-        }
-    }
-
-    handleSliderPopupClose = (event) => {
-        if (this.sliderPopup && !this.sliderPopup.contains(event.target) && 
-            event.target !== this.inputElement) {
-            this.removeSliderPopup();
-        }
-    }
-
-    handleSliderPopupKeydown = (event) => {
-        if (event.key === 'Escape') {
-            this.removeSliderPopup();
         }
     }
 
@@ -399,92 +348,68 @@ export class NumberControl extends PropertyControl {
         this.createExpandableContextMenu(event);
     }
 
-    createExpandableContextMenu(event) {
+    async createExpandableContextMenu(event) {
         // Remove existing context menu
         this.removeContextMenu();
         
-        // Create context menu container
-        this.contextMenu = document.createElement('div');
-        this.contextMenu.className = 'prop-context-menu prop-context-menu--expandable';
-        
-        // Position below the control - use same positioning as slider popup
+        // Get element position for positioning
         const rect = this.element.getBoundingClientRect();
-        this.contextMenu.style.position = 'absolute';
-        this.contextMenu.style.top = (rect.bottom + 4) + 'px';
-        this.contextMenu.style.left = rect.left + 'px';
-        this.contextMenu.style.width = rect.width + 'px'; // Changed from minWidth to width
-        this.contextMenu.style.zIndex = '1000';
         
-        // Add controls for min/max/step
-        this.addContextMenuControls();
-        
-        document.body.appendChild(this.contextMenu);
-        
-        // Close on click outside
-        setTimeout(() => {
-            document.addEventListener('click', this.handleContextMenuClose);
-        }, 0);
-    }
+        // Create context menu data for PropertyTable
+        const contextData = {
+            'Min': {
+                type: 'number',
+                mode: 'input',
+                value: this.options.min,
+                step: 0.1,
+                onChange: (newValue) => {
+                    this.options.min = newValue;
+                    this.updateConstraints();
+                }
+            },
+            'Max': {
+                type: 'number', 
+                mode: 'input',
+                value: this.options.max,
+                step: 0.1,
+                onChange: (newValue) => {
+                    this.options.max = newValue;
+                    this.updateConstraints();
+                }
+            },
+            'Step': {
+                type: 'number',
+                mode: 'input',
+                value: this.options.step,
+                min: 0.001,
+                max: 1,
+                step: 0.001,
+                precision: 4,
+                onChange: (newValue) => {
+                    this.options.step = newValue;
+                    this.updateConstraints();
+                }
+            },
+            'Mode': {
+                type: 'select',
+                value: this.options.mode,
+                options: ['input', 'slider', 'knob', 'input+slider'],
+                onChange: (newValue) => {
+                    this.options.mode = newValue;
+                    this.recreateControl();
+                }
+            }
+        };
 
-    addContextMenuControls() {
-        const controls = [
-            { label: 'Min', property: 'min', value: this.options.min },
-            { label: 'Max', property: 'max', value: this.options.max },
-            { label: 'Step', property: 'step', value: this.options.step }
-        ];
-        
-        controls.forEach(({ label, property, value }) => {
-            const row = document.createElement('div');
-            row.className = 'prop-context-row';
-            
-            const labelEl = document.createElement('label');
-            labelEl.textContent = label;
-            labelEl.className = 'prop-context-label';
-            
-            const input = document.createElement('input');
-            input.type = 'number';
-            input.value = value;
-            input.className = 'prop-context-input';
-            input.step = property === 'step' ? 0.001 : 0.1;
-            
-            input.addEventListener('change', () => {
-                this.options[property] = parseFloat(input.value);
-                this.updateConstraints();
-            });
-            
-            row.appendChild(labelEl);
-            row.appendChild(input);
-            this.contextMenu.appendChild(row);
+        // Create context menu using PropertyTable
+        this.contextMenu = await PropertyTable.createPopup(contextData, {
+            x: rect.left,
+            y: rect.bottom + 4,
+            width: rect.width,
+            onClose: () => {
+                this.contextMenu = null;
+            }
         });
-        
-        // Add mode selector
-        const modeRow = document.createElement('div');
-        modeRow.className = 'prop-context-row';
-        
-        const modeLabel = document.createElement('label');
-        modeLabel.textContent = 'Mode';
-        modeLabel.className = 'prop-context-label';
-        
-        const modeSelect = document.createElement('select');
-        modeSelect.className = 'prop-context-select';
-        
-        const modes = ['input', 'slider', 'knob', 'input+slider'];
-        modes.forEach(mode => {
-            const option = document.createElement('option');
-            option.value = mode;
-            option.textContent = mode;
-            option.selected = mode === this.options.mode;
-            modeSelect.appendChild(option);
-        });
-        
-        modeSelect.addEventListener('change', () => {
-            this.options.mode = modeSelect.value;
-            this.recreateControl();
-        });
-        
-        modeRow.appendChild(modeLabel);
-        modeRow.appendChild(modeSelect);
-        this.contextMenu.appendChild(modeRow);
     }
 
     updateConstraints() {
@@ -522,17 +447,8 @@ export class NumberControl extends PropertyControl {
 
     removeContextMenu() {
         if (this.contextMenu) {
-            document.removeEventListener('click', this.handleContextMenuClose);
-            if (this.contextMenu.parentNode) {
-                this.contextMenu.parentNode.removeChild(this.contextMenu);
-            }
+            this.contextMenu.dispose();
             this.contextMenu = null;
-        }
-    }
-
-    handleContextMenuClose = (event) => {
-        if (this.contextMenu && !this.contextMenu.contains(event.target)) {
-            this.removeContextMenu();
         }
     }
 
