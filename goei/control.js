@@ -5,13 +5,13 @@
 
 //===================================================================================
 // helper functions to create basic DOM elements
-let createE = a => document.createElement(a);
+let createE = a => document.createElement(a);       
 let addEvent = (el, ev) => { Object.keys(ev).map(k => el.addEventListener(k, ev[k])) }
 let appendC = (el, ...c) => c.map(f => el.appendChild(f))
 let remove=el=>el.parentNode?.removeChild(el)
 let add = (a, b) => Object.assign(a, b);
 
-let newDiv = (classname, container = createE('div')) => (
+let newDiv = (classname='control', container = createE('div')) => (
     container.className = classname,
     container
 )
@@ -36,27 +36,26 @@ let newSlider = (min, max, value, onChange = _ => { }, sliderEl = createE('input
 //===================================================================================
 // creates a simple slider control with label
 export function createSliderControl({ label, value, min = 0, max = 100, onChange = _ => { } }) {
-    const container = newDiv('slider-control');
+    const container = newDiv();
     const sliderEl = newSlider(min, max, value, (e) => {
         value = parseFloat(e.target.value);
         onChange(value);
     });
-    
-    let methods = {
+    add(container,{
         updateValue: (newValue) => {
             value = newValue;
             sliderEl.value = newValue;
         },
         remove: () => remove(container)
-    }
-    
-    add(container, methods);
+    });
+
     if (label) {
         const labelEl = newLabel(label);
         appendC(container, labelEl, sliderEl);
     } else {
         appendC(container, sliderEl);
     }
+
     return container;
 }
 
@@ -69,7 +68,7 @@ export function createMultiControl({ label, values,
     onValueClick = _ => { },
     onDragStart = _ => { } }) {
     // Create container
-    const container = newDiv('control');
+    const container = newDiv();
     const inputsContainer = newDiv('inputs');
     values = [...values].flat()       // if values is not an array, convert it to one
     const inputs = [];
