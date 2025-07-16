@@ -1,6 +1,115 @@
 // ==================================================================================
+// GOEI CONTROLS - Menu System with Integrated Styling
+//
+// This module provides a complete menu/control system with built-in styling.
+// The styles are automatically injected when the module loads, eliminating the
+// need for external CSS files.
+//
+// Key Features:
+// - Auto-injection of required CSS styles
+// - Customizable styling through addCustomStyles()
+// - Clean, modern control appearance
+// - Responsive layout system
+//
+// Usage:
+// import { createSliderControl, createMultiControl, addCustomStyles } from './goei-controls.js';
+//
+// The styles will be automatically injected. To add custom styling:
+// addCustomStyles(`
+//   .control { background: #custom-color; }
+// `);
+//
+// ==================================================================================
 // goei main controls
 
+//===================================================================================
+// CSS Styles for the control system
+const GOEI_STYLES = `
+    .control {
+        background: white;
+        border: none; /*1px solid #ddd;*/
+        border-radius: 0;
+        padding: 8px 12px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        border-bottom: none;
+        box-sizing: border-box;
+        width: 100%;
+    }
+    
+    .control:last-child {
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .control label,
+    .control-text {
+        min-width: 70px;
+        font-weight: bold;
+        font-family: Arial, sans-serif;
+    }
+    
+    .inputs {
+        display: flex;
+        gap: 3px;
+        margin-left: auto;
+        width: 180px;
+    }
+    
+    .inputs input {
+        width: 30px;
+        flex: 1;
+        padding: 4px 6px;
+        border: 1px solid #ccc;
+        border: none;
+        background-color: aliceblue;
+        border-radius: 3px;
+        font-family: Arial, sans-serif;
+        box-sizing: border-box;
+    }
+    
+    input[type="range"] {
+        width: 180px;
+        margin: 0;
+        box-sizing: border-box;
+    }
+    
+    .control-container {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        overflow: hidden;
+        box-sizing: border-box;
+        width: 100%;
+    }
+    
+    .control-text {
+        font-family: Arial, sans-serif;
+        color: #333;
+    }
+`;
+
+//===================================================================================
+// Function to inject CSS styles into the document
+let injectStyles = () => {
+    // Check if styles are already injected
+    if (document.getElementById('goei-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'goei-styles';
+    style.textContent = GOEI_STYLES;
+    document.head.appendChild(style);
+};
+
+// Auto-inject styles when the module loads
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', injectStyles);
+    } else {
+        injectStyles();
+    }
+}
 
 //===================================================================================
 // helper functions to create basic DOM elements
@@ -22,6 +131,7 @@ let newDiv = (classname = 'control', container = createE('div')) => (
 /// eg: newContainer({ click: () => console.log('clicked') }, { customProp: 'value' })
 let newContainer = (events, props) => {
     const container = newDiv();
+    container.style.boxSizing = 'border-box'; // Ensure proper box model
     addEvent(container, events); // Add event listeners to the main container
     addProps(container, {
         remove: () => remove(container), // Add a method to remove the container
@@ -126,3 +236,75 @@ export function createMultiControl({ type = 'text', label, values, events = {}, 
 
 
 
+
+// ===================================================================================
+// Export the style injection function for manual use if needed
+export { injectStyles };
+
+// ===================================================================================
+// creates a simple container that can hold multiple controls.
+// this can be nestered to create a hierarchy of controls
+export function createContainer({ indent = 0, events = {} }) {
+    const container = newDiv('control-container');
+    
+    // Apply vertical layout and indentation
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.gap = '0px';  // No gap between controls for tight layout
+    container.style.width = '100%'; // Ensure container takes full width
+    container.style.boxSizing = 'border-box'; // Include padding in width calculation
+    
+    if (indent > 0) {
+        // Use padding instead of margin to keep controls within container bounds
+        container.style.paddingLeft = (indent * 20) + 'px';
+    }
+    
+    // Add event listeners if provided
+    addEvent(container, events);
+    
+    // Add utility methods
+    addProps(container, {
+        remove: () => remove(container),
+        
+        // Add a child control
+        addControl: (control) => {
+            // Controls will automatically fit within the container's content area
+            control.style.width = '100%';
+            control.style.boxSizing = 'border-box';
+            appendC(container, control);
+            return container;
+        },
+        
+        // Set indentation level
+        setIndent: (level) => {
+            container.style.paddingLeft = (level * 20) + 'px';
+            return container;
+        }
+    });
+    
+    return container;
+}
+
+//===================================================================================
+// Function to add custom styles to the goei system
+export function addCustomStyles(customCSS) {
+    const customStyleId = 'goei-custom-styles';
+    let customStyle = document.getElementById(customStyleId);
+    
+    if (!customStyle) {
+        customStyle = document.createElement('style');
+        customStyle.id = customStyleId;
+        document.head.appendChild(customStyle);
+    }
+    
+    customStyle.textContent += '\n' + customCSS;
+}
+
+//===================================================================================
+// Function to reset/clear custom styles
+export function clearCustomStyles() {
+    const customStyle = document.getElementById('goei-custom-styles');
+    if (customStyle) {
+        customStyle.remove();
+    }
+}

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Tests</title>
     <style>
+        /* Page layout styles - kept separate from control styles */
         html, body {
             margin: 0;
             padding: 0;
@@ -31,50 +32,6 @@
             overflow: auto;
         }
         
-        .control {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 0;
-            padding: 8px 12px;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            border-bottom: none;
-        }
-        
-        .control:last-child {
-            border-bottom: 1px solid #ddd;
-        }
-        
-        .control label {
-            min-width: 70px;
-            font-weight: bold;
-        }
-        
-        .inputs {
-            display: flex;
-            gap: 3px;
-            margin-left: auto;
-            width: 180px;
-        }
-        
-        .inputs input {
-            width:30px;
-            flex: 1;
-            padding: 4px 6px;
-            border: 1px solid #ccc;
-            border:none;
-            background-color: aliceblue;
-            border-radius: 3px;
-        }
-        
-        input[type="range"] {
-            width: 120px;
-            margin: 0;
-        }
-        
         .output {
             background: #e8f4f8;
             border: 1px solid #bee5eb;
@@ -95,18 +52,14 @@
             margin: 15px 0;
         }
         
-        #multi-controls {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            overflow: hidden;
-        }
+        /* Control styles are now handled by goei-controls.js */
     </style>
 </head>
 <body>
     <div id="main-container"></div>
     
     <script type="module">
-        import { createMultiControl, createSliderControl,createTextControl } from './goei-controls.js';
+        import { createMultiControl, createSliderControl, createTextControl, createContainer } from './goei-controls.js';
         import { SplitPane } from '../splitpane/splitpane.js';
         
         // Create split pane
@@ -136,6 +89,10 @@
                 <h2>Slider Controls</h2>
                 <div id="slider-controls"></div>
             </div>
+            <div class="test-section">
+                <h2>Nested Containers (Indentation Test)</h2>
+                <div id="nested-containers"></div>
+            </div>
         `;
         leftPanel.appendChild(leftContent);
         
@@ -155,6 +112,7 @@
         
         // Multi Controls
         const multiContainer = document.getElementById('multi-controls');
+        // Container styling is now handled by goei-controls.js
         
         const positionControl = createMultiControl({
             label: 'Position',
@@ -211,6 +169,9 @@
         multiContainer.appendChild(namePartsControl);
         multiContainer.appendChild(fullWidthInputs);
         
+        // Apply control-container class for proper styling
+        multiContainer.className = 'control-container';
+        
         // Slider Controls
         const sliderContainer = document.getElementById('slider-controls');
         
@@ -262,6 +223,50 @@
         sliderContainer.appendChild(textControl);
         sliderContainer.appendChild(temperatureSlider);
         sliderContainer.appendChild(fullWidthSlider);
+        
+        // Apply control-container class for proper styling
+        sliderContainer.className = 'control-container';
+        
+        // Nested Containers Test
+        const nestedContainer = document.getElementById('nested-containers');
+        
+        // Create main container
+        const mainNestedContainer = createContainer({ indent: 0 });
+        
+        // Level 0 controls
+        const level0Control = createTextControl({ text: 'Level 0 - Full Width' });
+        mainNestedContainer.addControl(level0Control);
+        
+        // Level 1 container (indented)
+        const level1Container = createContainer({ indent: 1 });
+        const level1Control = createSliderControl({
+            label: 'Level 1',
+            value: 50,
+            events: { onChange: (val) => log(`Level 1 slider: ${val}`) }
+        });
+        level1Container.addControl(level1Control);
+        
+        // Level 2 container (more indented)
+        const level2Container = createContainer({ indent: 2 });
+        const level2Control = createMultiControl({
+            label: 'Level 2',
+            values: [1, 2, 3],
+            events: { onChange: (vals) => log(`Level 2 values: [${vals.join(', ')}]`) }
+        });
+        level2Container.addControl(level2Control);
+        
+        // Level 3 container (most indented)
+        const level3Container = createContainer({ indent: 3 });
+        const level3Control = createTextControl({ text: 'Level 3 - Should fit in narrow space' });
+        level3Container.addControl(level3Control);
+        
+        // Build the hierarchy
+        level2Container.addControl(level3Container);
+        level1Container.addControl(level2Container);
+        mainNestedContainer.addControl(level1Container);
+        
+        nestedContainer.appendChild(mainNestedContainer);
+        nestedContainer.className = 'control-container';
         
         // Test update methods after 3 seconds
         setTimeout(() => {
