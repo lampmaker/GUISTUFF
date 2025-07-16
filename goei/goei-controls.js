@@ -65,6 +65,26 @@ const GOEI_STYLES = `
         font-family: Arial, sans-serif;
         box-sizing: border-box;
     }
+    
+    input[type="button"] {
+        background-color: #f8f9fa;
+        border: 1px solid #ddd;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+    
+    input[type="button"]:hover {
+        background-color: #e9ecef;
+        border-color: #adb5bd;
+    }
+    
+    input[type="button"]:active {
+        background-color: #dee2e6;
+        border-color: #6c757d;
+        transform: translateY(1px);
+    }
+    
     input[type="range"] {
         width: 180px;
         margin: 0;
@@ -90,10 +110,25 @@ const GOEI_STYLES = `
     .control-container.nested {
         padding-left: 20px;
     }
+    /* Overlay style for context menus, popups, etc. */
+    .control-container.overlay {
+        position: absolute;
+        z-index: 9999;
+        min-width: 160px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+        background: white;
+        pointer-events: auto;
+    }
     .control-text {
         font-family: Arial, sans-serif;
         color: #333;
     }
+
+    .control-container.collapsed {
+        display: none; /* Hide the container when collapsed */
+    }
+
+
 `;
 
 
@@ -147,6 +182,17 @@ let newContainer = (events, props) => {
     return container;
 }
 
+
+
+/*
+element types:
+- text: a simple text element
+- input: a form input element
+- slider: a range input element
+- button: a button element
+
+
+*/
 //===================================================================================
 // creates a new text element with text content (not a form label)
 let newText = (textContent, events = {}, textEl = createE('span')) => (
@@ -241,19 +287,32 @@ export function createMultiControl({ type = 'text', label, values, events = {}, 
     return container;
 }
 
-
-
-
+//===================================================================================
+// creates a multi-button control using createMultiControl as a wrapper
+// buttons: array of { text, onClick }
+export function createButtonControl({ label, buttons, events = {} }) {
+    return createMultiControl({
+        type: 'button',
+        label,
+        values: buttons.map(btn => btn.text),
+        events,
+        valueEvents: {
+            click: (e) => {
+                const idx = Array.from(e.target.parentNode.children).indexOf(e.target);
+                buttons[idx]?.onClick?.(e);
+            }
+        }
+    });
+}
 
 // ===================================================================================
 // creates a simple container that can hold multiple controls.
 // this can be nestered to create a hierarchy of controls
-export function createContainer({ indent = 0, events = {} }) {
+export function createContainer({ indent = false, overlay = false, events = {}, collapsed = false }) {
     const container = newDiv('control-container');
-    // If this container is nested, add the 'nested' class for indentation
-    if (indent) {
-        container.classList.add('nested');
-    }
+    if (indent) container.classList.add('nested');
+    if (overlay) container.classList.add('overlay');
+    if (collapsed) container.classList.add('collapsed');
     // Add event listeners if provided
     addEvent(container, events);
     // Add utility methods
@@ -270,10 +329,23 @@ export function createContainer({ indent = 0, events = {} }) {
         setIndent: (isNested) => {
             container.classList.toggle('nested', !!isNested);
             return container;
+        },
+        // Set overlay (true/false)
+        setOverlay: (isOverlay) => {
+            container.classList.toggle('overlay', !!isOverlay);
+            return container;
+        },
+        // Set collapsed (true/false)
+        setCollapsed: (isCollapsed) => {
+            container.classList.toggle('collapsed', !!isCollapsed);
+            return container;
         }
     });
     return container;
 }
+
+
+
 
 //===================================================================================
 // Function to add custom styles to the goei system

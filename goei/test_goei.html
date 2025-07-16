@@ -59,7 +59,7 @@
     <div id="main-container"></div>
     
     <script type="module">
-        import { createMultiControl, createSliderControl, createTextControl, createContainer } from './goei-controls.js';
+        import { createMultiControl, createSliderControl, createTextControl, createContainer, createButtonControl } from './goei-controls.js';
         import { SplitPane } from '../splitpane/splitpane.js';
         
         // Create split pane
@@ -92,6 +92,10 @@
             <div class="test-section">
                 <h2>Nested Containers (Indentation Test)</h2>
                 <div id="nested-containers"></div>
+            </div>
+            <div class="test-section">
+                <h2>Button Controls</h2>
+                <div id="button-controls"></div>
             </div>
         `;
         leftPanel.appendChild(leftContent);
@@ -128,7 +132,7 @@
         });
         
         const nameControl = createMultiControl({
-            label: 'Name',
+            label: 'Name',         
             values: ["Jonathan"],
             events: {
                 onChange: (vals) => log(`Name changed: ${vals.join(' ')}`)
@@ -267,6 +271,40 @@
         
         nestedContainer.appendChild(mainNestedContainer);
        // nestedContainer.className = 'control-container';
+        
+        // Button Controls
+        const buttonContainer = document.getElementById('button-controls');
+        
+        const actionButtons = createButtonControl({
+            label: 'Actions',
+            buttons: [
+                { text: 'Save', onClick: () => log('Save button clicked!') },
+                { text: 'Load', onClick: () => log('Load button clicked!') },
+                { text: 'Delete', onClick: () => log('Delete button clicked!') }
+            ]
+        });
+        
+        const fileButtons = createButtonControl({
+            label: 'File Operations',
+            buttons: [
+                { text: 'New', onClick: () => log('New file created') },
+                { text: 'Open', onClick: () => log('File opened') }
+            ]
+        });
+        
+        const modeButtons = createButtonControl({
+            label: '',  // No label for full width
+            buttons: [
+                { text: 'Edit Mode', onClick: () => log('Switched to Edit Mode') },
+                { text: 'View Mode', onClick: () => log('Switched to View Mode') },
+                { text: 'Debug Mode', onClick: () => log('Switched to Debug Mode') }
+            ]
+        });
+        
+        buttonContainer.appendChild(actionButtons);
+        buttonContainer.appendChild(fileButtons);
+        buttonContainer.appendChild(modeButtons);
+        buttonContainer.className = 'control-container';
         
         // Test update methods after 3 seconds
         setTimeout(() => {
