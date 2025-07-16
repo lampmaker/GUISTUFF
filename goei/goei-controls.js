@@ -39,7 +39,9 @@ const GOEI_STYLES = `
         box-sizing: border-box;
         width: 100%;
     }
-
+    .control:last-child {
+        border-bottom: 1px solid #ddd;
+    }
     .control label,
     .control-text {
         min-width: 70px;
@@ -84,17 +86,10 @@ const GOEI_STYLES = `
         border-bottom: none;
         border-radius: 0;
     }
-    /* Indentation classes for nested containers */
-    .indent-1 { padding-left: 10px; }
-    .indent-2 { padding-left: 20px; }
-    .indent-3 { padding-left: 30px; }
-    .indent-4 { padding-left: 40px; }
-    .indent-5 { padding-left: 50px; }
-    .indent-6 { padding-left: 60px; }
-    .indent-7 { padding-left: 70px; }
-    .indent-8 { padding-left: 80px; }
-    .indent-9 { padding-left: 90px; }
-    .indent-10 { padding-left: 100px; }
+    /* Indentation for nested containers */
+    .control-container.nested {
+        padding-left: 20px;
+    }
     .control-text {
         font-family: Arial, sans-serif;
         color: #333;
@@ -255,9 +250,9 @@ export function createMultiControl({ type = 'text', label, values, events = {}, 
 // this can be nestered to create a hierarchy of controls
 export function createContainer({ indent = 0, events = {} }) {
     const container = newDiv('control-container');
-    // Add indentation class if needed
-    if (indent > 0) {
-        container.classList.add(`indent-${indent}`);
+    // If this container is nested, add the 'nested' class for indentation
+    if (indent) {
+        container.classList.add('nested');
     }
     // Add event listeners if provided
     addEvent(container, events);
@@ -271,15 +266,9 @@ export function createContainer({ indent = 0, events = {} }) {
             appendC(container, control);
             return container;
         },
-        // Set indentation level
-        setIndent: (level) => {
-            // Remove previous indent classes
-            for (let i = 1; i <= 10; i++) {
-                container.classList.remove(`indent-${i}`);
-            }
-            if (level > 0) {
-                container.classList.add(`indent-${level}`);
-            }
+        // Set indentation (true/false)
+        setIndent: (isNested) => {
+            container.classList.toggle('nested', !!isNested);
             return container;
         }
     });
