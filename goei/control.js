@@ -5,13 +5,13 @@
 
 //===================================================================================
 // helper functions to create basic DOM elements
-let createE = a => document.createElement(a);       
+let createE = a => document.createElement(a);
 let addEvent = (el, ev) => { Object.keys(ev).map(k => el.addEventListener(k, ev[k])) }
 let appendC = (el, ...c) => c.map(f => el.appendChild(f))
-let remove=el=>el.parentNode?.removeChild(el)
+let remove = el => el.parentNode?.removeChild(el)
 let add = (a, b) => Object.assign(a, b);
 
-let newDiv = (classname='control', container = createE('div')) => (
+let newDiv = (classname = 'control', container = createE('div')) => (
     container.className = classname,
     container
 )
@@ -41,20 +41,14 @@ export function createSliderControl({ label, value, min = 0, max = 100, onChange
         value = parseFloat(e.target.value);
         onChange(value);
     });
-    add(container,{
+    add(container, {
         updateValue: (newValue) => {
             value = newValue;
             sliderEl.value = newValue;
         },
         remove: () => remove(container)
     });
-
-    if (label) {
-        const labelEl = newLabel(label);
-        appendC(container, labelEl, sliderEl);
-    } else {
-        appendC(container, sliderEl);
-    }
+    appendC(container, newLabel(label), sliderEl);
 
     return container;
 }
@@ -90,23 +84,16 @@ export function createMultiControl({ label, values,
     })
 
     // additional methods available:
-    let methods = {
+    add(container, {
         updateValues: (newValues) => {
             newValues = [...newValues].flat();
             inputs.forEach((input, i) => input.value = newValues[i] || '');
             values.splice(0, values.length, ...newValues);      // write the newvalues into the values
         },
         remove: () => remove(container)
-    }
-    add(container, methods)                              // add the methods to the element
-    
-    // Assemble with or without label
-    if (label) {
-        const labelEl = newLabel(label);
-        appendC(container, labelEl, inputsContainer);
-    } else {
-        appendC(container, inputsContainer);
-    }
+    })                              // add the methods to the element
+
+    appendC(container, newLabel(label), inputsContainer);
     return container;
 }
 
