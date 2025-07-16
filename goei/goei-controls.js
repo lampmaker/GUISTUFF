@@ -238,9 +238,11 @@ export function createTextControl({ text, events = {} }) {
 //
 //
 export function createSliderControl({ label, value, min = 0, max = 1, step = 0.01, events = {} }) {
-    const sliderElement = newSlider({ min, max, step, value }, (e) => {
-        value = parseFloat(e.target.value);
-        events.onChange?.(value);
+    const sliderElement = newSlider({ min, max, step, value }, {
+        input: (e) => {
+            value = parseFloat(e.target.value);
+            events.onChange?.(value);
+        }
     });
 
     const container = newContainer(events, {
@@ -264,9 +266,11 @@ export function createMultiControl({ type = 'text', label, values, events = {}, 
     values = [...values].flat()                             // if values is not an array, convert it to one
     const inputs = [];
     values.forEach((val, i) => {
-        const inputEl = newInput(type, val, (e) => {
-            values[i] = e.target.value;
-            events.onChange?.([...values]);
+        const inputEl = newInput(type, val, {
+            input: (e) => {
+                values[i] = e.target.value;
+                events.onChange?.([...values]);
+            }
         });
 
         addEvent(inputEl, valueEvents)
