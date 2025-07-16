@@ -58,6 +58,19 @@ let newSlider = ({ min = 0, max = 1, step = 0.01, value }, events = {}, sliderEl
 
 
 //===================================================================================
+// creates a simple control with just text and event handlers
+// this can be use for folder headers for instance.
+export function createTextControl({ text, events = {} }) {
+    const textElement = newText(text, events);
+    const container = newContainer(events, {
+        get text() { return textElement.textContent; },
+        set text(value) { textElement.textContent = value; }
+    });
+    appendC(container, textElement);
+    return container;
+}
+
+//===================================================================================
 // creates a simple slider control with label
 //
 //
@@ -66,23 +79,24 @@ export function createSliderControl({ label, value, min = 0, max = 1, step = 0.0
         value = parseFloat(e.target.value);
         events.onChange?.(value);
     });
-    
+
     const container = newContainer(events, {
         updateValue: (newValue) => {
             value = newValue;
             sliderElement.value = newValue;
         },
-        get value() { return value; }       
+        get value() { return value; }
     });
     appendC(container, newText(label), sliderElement);
     return container;
 }
 
+
 //===================================================================================
 // creates a very simple textcontrol with label
 // common events can be added to the control as a whole.
 // valueEvents are attached to the individual inputs
-export function createMultiControl({ type='text',label, values, events = {}, valueEvents = {} }) {
+export function createMultiControl({ type = 'text', label, values, events = {}, valueEvents = {} }) {
     const inputsContainer = newDiv('inputs');
     values = [...values].flat()                             // if values is not an array, convert it to one
     const inputs = [];
@@ -91,7 +105,7 @@ export function createMultiControl({ type='text',label, values, events = {}, val
             values[i] = e.target.value;
             events.onChange?.([...values]);
         });
-                
+
         addEvent(inputEl, valueEvents)
         inputs.push(inputEl);
         appendC(inputsContainer, inputEl);
@@ -103,7 +117,7 @@ export function createMultiControl({ type='text',label, values, events = {}, val
             inputs.forEach((input, i) => input.value = newValues[i] || '');
             values.splice(0, values.length, ...newValues);      // write the newvalues into the values
         },
-        get values() { return [...values]; }       
+        get values() { return [...values]; }
 
     })                              // add the methods to the element
     appendC(container, newText(label), inputsContainer);

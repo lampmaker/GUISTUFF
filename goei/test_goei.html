@@ -106,7 +106,7 @@
     <div id="main-container"></div>
     
     <script type="module">
-        import { createMultiControl, createSliderControl } from './goei-controls.js';
+        import { createMultiControl, createSliderControl,createTextControl } from './goei-controls.js';
         import { SplitPane } from '../splitpane/splitpane.js';
         
         // Create split pane
@@ -214,6 +214,9 @@
         // Slider Controls
         const sliderContainer = document.getElementById('slider-controls');
         
+
+        const textControl=createTextControl({text:"This is a test"})
+
         const opacitySlider = createSliderControl({
             label: 'Opacity',
             value: 50.1,
@@ -256,6 +259,7 @@
         
         sliderContainer.appendChild(opacitySlider);
         sliderContainer.appendChild(volumeSlider);
+        sliderContainer.appendChild(textControl);
         sliderContainer.appendChild(temperatureSlider);
         sliderContainer.appendChild(fullWidthSlider);
         
