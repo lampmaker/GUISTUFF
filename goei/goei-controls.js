@@ -1,0 +1,118 @@
+// ==================================================================================
+// goei main controls
+
+
+//===================================================================================
+// helper functions to create basic DOM elements
+let createE = a => document.createElement(a);                                                   // creates a new element
+let addEvent = (el, ev) => { Object.keys(ev).map(k => el.addEventListener(k, ev[k])) }          // adds an event listener to an element
+let appendC = (el, ...c) => c.map(f => el.appendChild(f))                                       // appends children to an element
+let remove = el => el.parentNode?.removeChild(el)                                               // removes an element from its parent node, if it has one
+let addProps = (a, b) => Object.assign(a, b);                                                        // adds properties to an object, like a class or methods
+
+//===================================================================================
+// creates a new div with a classname, defaults to 'control'
+let newDiv = (classname = 'control', container = createE('div')) => (
+    container.className = classname,
+    container
+)
+//===================================================================================
+// creates a new container with event listeners and properties
+// This function creates a new container element with specified event listeners and properties
+/// eg: newContainer({ click: () => console.log('clicked') }, { customProp: 'value' })
+let newContainer = (events, props) => {
+    const container = newDiv();
+    addEvent(container, events); // Add event listeners to the main container
+    addProps(container, {
+        remove: () => remove(container), // Add a method to remove the container
+        ...props
+    });
+    return container;
+}
+
+//===================================================================================
+// creates a new label with a text content
+let newLabel = (labelname, labelEl = createE('label')) => (
+    labelEl.textContent = labelname,
+    labelEl
+)
+//===================================================================================
+// creates a new input element with type and value, and an onChange event handler
+let newInput = (type, value, onChange = _ => { }, inputEl = createE('input')) => (
+    inputEl.type = type, inputEl.value = value,
+    addEvent(inputEl, { input: (e) => onChange(e) }),
+    inputEl
+)
+
+//===================================================================================
+// creates a new button element with text content and an onClick event handler
+let newSlider = (min, max, value, onChange = _ => { }, sliderEl = createE('input')) => (
+    sliderEl.type = 'range', sliderEl.min = min, sliderEl.max = max, sliderEl.value = value,
+    addEvent(sliderEl, { input: (e) => onChange(e) }),
+    sliderEl
+)
+
+
+
+
+
+
+
+
+
+
+
+
+//===================================================================================
+// creates a simple slider control with label
+//
+//
+export function createSliderControl({ label, value, min = 0, max = 100, events = {} }) {
+    const sliderElement = newSlider(min, max, value, (e) => {
+        value = parseFloat(e.target.value);
+        events.onChange?.(value);
+    });
+    const container = newContainer(events, {
+        updateValue: (newValue) => {
+            value = newValue;
+            sliderElement.value = newValue;
+        },
+        get value() { return value; }       
+    });
+    appendC(container, newLabel(label), sliderElement);
+    return container;
+}
+
+//===================================================================================
+// creates a very simple textcontrol with label
+// common events can be added to the control as a whole.
+// valueEvents are attached to the individual inputs
+export function createMultiControl({ label, values, events = {}, valueEvents = {} }) {
+    const inputsContainer = newDiv('inputs');
+    values = [...values].flat()                             // if values is not an array, convert it to one
+    const inputs = [];
+    values.forEach((val, i) => {
+        const inputEl = newInput('text', val, (e) => {
+            values[i] = e.target.value;
+            events.onChange?.([...values]);
+        });
+        addEvent(inputEl, valueEvents)
+        inputs.push(inputEl);
+        appendC(inputsContainer, inputEl);
+    });
+
+    const container = newContainer(events, {
+        updateValues: (newValues) => {
+            newValues = [...newValues].flat();
+            inputs.forEach((input, i) => input.value = newValues[i] || '');
+            values.splice(0, values.length, ...newValues);      // write the newvalues into the values
+        },
+        get values() { return [...values]; }       
+
+    })                              // add the methods to the element
+    appendC(container, newLabel(label), inputsContainer);
+    return container;
+}
+
+
+

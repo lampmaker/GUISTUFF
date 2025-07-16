@@ -106,8 +106,8 @@
     <div id="main-container"></div>
     
     <script type="module">
-        import { createMultiControl, createSliderControl } from './goei/control.js';
-        import { SplitPane } from './splitpane/splitpane.js';
+        import { createMultiControl, createSliderControl } from './goei-controls.js';
+        import { SplitPane } from '../splitpane/splitpane.js';
         
         // Create split pane
         const mainContainer = document.getElementById('main-container');
@@ -158,43 +158,57 @@
         
         const positionControl = createMultiControl({
             label: 'Position',
-            values: [10, 20, 30,90],
-            onChange: (vals) => log(`Position changed: [${vals.join(', ')}]`),
-            onRightClick: (e) => log('Position right-clicked'),
-            onLeftClick: (e) => log('Position left-clicked'),
-            onValueClick: (e, index, value) => log(`Position value ${index} clicked: ${value}`)
+            values: [10, 20, 30, 90],
+            events: {
+                onChange: (vals, index) => log(`Position changed: [${vals.join(', ')}] at index ${index}`),
+                click: (e) => log('Position container clicked')
+            },
+            valueEvents: {
+                focus: (e) => log('Position input focused'),
+                blur: (e) => log('Position input blurred')
+            }
         });
         
-        const name = createMultiControl({
-            label: 'name',
-            values: ["Jonathan"]
+        const nameControl = createMultiControl({
+            label: 'Name',
+            values: ["Jonathan"],
+            events: {
+                onChange: (vals) => log(`Name changed: ${vals.join(' ')}`)
+            }
         });
-        
 
         const colorControl = createMultiControl({
             label: 'RGB Color',
             values: [255, 128, 64],
-            onChange: (vals) => log(`Color changed: rgb(${vals.join(', ')})`),
-            onValueClick: (e, index, value) => log(`Color channel ${index} clicked`)
+            events: {
+                onChange: (vals, index) => log(`Color changed: rgb(${vals.join(', ')}) at index ${index}`)
+            },
+            valueEvents: {
+                focus: (e) => log('Color input focused'),
+                blur: (e) => log('Color input blurred')
+            }
         });
         
-        const nameControl = createMultiControl({
+        const namePartsControl = createMultiControl({
             label: 'Name Parts',
             values: ['John', 'Doe'],
-            onChange: (vals) => log(`Name changed: ${vals.join(' ')}`),
+            events: {
+                onChange: (vals) => log(`Name parts changed: ${vals.join(' ')}`)
+            }
         });
         
         const fullWidthInputs = createMultiControl({
             label: '',  // No label - full width
             values: [1.5, 2.0, 3.14],
-            onChange: (vals) => log(`Full width values: [${vals.join(', ')}]`),
+            events: {
+                onChange: (vals) => log(`Full width values: [${vals.join(', ')}]`)
+            }
         });
         
-        multiContainer.appendChild(name);
-        multiContainer.appendChild(positionControl);
-
-        multiContainer.appendChild(colorControl);
         multiContainer.appendChild(nameControl);
+        multiContainer.appendChild(positionControl);
+        multiContainer.appendChild(colorControl);
+        multiContainer.appendChild(namePartsControl);
         multiContainer.appendChild(fullWidthInputs);
         
         // Slider Controls
@@ -205,7 +219,9 @@
             value: 50,
             min: 0,
             max: 100,
-            onChange: (val) => log(`Opacity: ${val}%`)
+            events: {
+                onChange: (val) => log(`Opacity: ${val}%`)
+            }
         });
         
         const volumeSlider = createSliderControl({
@@ -213,7 +229,9 @@
             value: 75,
             min: 0,
             max: 100,
-            onChange: (val) => log(`Volume: ${val}`)
+            events: {
+                onChange: (val) => log(`Volume: ${val}`)
+            }
         });
         
         const temperatureSlider = createSliderControl({
@@ -221,7 +239,9 @@
             value: 20,
             min: -10,
             max: 50,
-            onChange: (val) => log(`Temperature: ${val}°C`)
+            events: {
+                onChange: (val) => log(`Temperature: ${val}°C`)
+            }
         });
         
         const fullWidthSlider = createSliderControl({
@@ -229,7 +249,9 @@
             value: 33,
             min: 0,
             max: 100,
-            onChange: (val) => log(`Full width slider: ${val}`)
+            events: {
+                onChange: (val) => log(`Full width slider: ${val}`)
+            }
         });
         
         sliderContainer.appendChild(opacitySlider);
