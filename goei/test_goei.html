@@ -176,7 +176,7 @@
         const sliderContainer = document.getElementById('slider-controls');
         
 
-        const textControl=createTextControl({text:"This is a test"})
+        const textControl=createTextControl({text:"This is a test, text only control thingy"})
 
         const opacitySlider = createSliderControl({
             label: 'Opacity',
@@ -247,7 +247,7 @@
         level1Container.addControl(level1Control);
         
         // Level 2 container (more indented)
-        const level2Container = createContainer({ indent: 2 });
+        const level2Container = createContainer({ indent: 1 });
         const level2Control = createMultiControl({
             label: 'Level 2',
             values: [1, 2, 3],
@@ -256,7 +256,7 @@
         level2Container.addControl(level2Control);
         
         // Level 3 container (most indented)
-        const level3Container = createContainer({ indent: 3 });
+        const level3Container = createContainer({ indent: 1 });
         const level3Control = createTextControl({ text: 'Level 3 - Should fit in narrow space' });
         level3Container.addControl(level3Control);
         
@@ -266,7 +266,7 @@
         mainNestedContainer.addControl(level1Container);
         
         nestedContainer.appendChild(mainNestedContainer);
-        nestedContainer.className = 'control-container';
+       // nestedContainer.className = 'control-container';
         
         // Test update methods after 3 seconds
         setTimeout(() => {

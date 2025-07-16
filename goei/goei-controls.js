@@ -39,25 +39,19 @@ const GOEI_STYLES = `
         box-sizing: border-box;
         width: 100%;
     }
-    
-    .control:last-child {
-        border-bottom: 1px solid #ddd;
-    }
-    
+
     .control label,
     .control-text {
         min-width: 70px;
         font-weight: bold;
         font-family: Arial, sans-serif;
     }
-    
     .inputs {
         display: flex;
         gap: 3px;
         margin-left: auto;
         width: 180px;
     }
-    
     .inputs input {
         width: 30px;
         flex: 1;
@@ -69,33 +63,51 @@ const GOEI_STYLES = `
         font-family: Arial, sans-serif;
         box-sizing: border-box;
     }
-    
     input[type="range"] {
         width: 180px;
         margin: 0;
         box-sizing: border-box;
     }
-    
     .control-container {
+        background: white;
         border: 1px solid #ddd;
         border-radius: 4px;
         overflow: hidden;
         box-sizing: border-box;
         width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 0px;
     }
-    
+    .control-container .control-container {
+        border-right: none;
+        border-bottom: none;
+        border-radius: 0;
+    }
+    /* Indentation classes for nested containers */
+    .indent-1 { padding-left: 10px; }
+    .indent-2 { padding-left: 20px; }
+    .indent-3 { padding-left: 30px; }
+    .indent-4 { padding-left: 40px; }
+    .indent-5 { padding-left: 50px; }
+    .indent-6 { padding-left: 60px; }
+    .indent-7 { padding-left: 70px; }
+    .indent-8 { padding-left: 80px; }
+    .indent-9 { padding-left: 90px; }
+    .indent-10 { padding-left: 100px; }
     .control-text {
         font-family: Arial, sans-serif;
         color: #333;
     }
 `;
 
+
 //===================================================================================
 // Function to inject CSS styles into the document
-let injectStyles = () => {
+export let injectStyles = () => {
     // Check if styles are already injected
     if (document.getElementById('goei-styles')) return;
-    
+
     const style = document.createElement('style');
     style.id = 'goei-styles';
     style.textContent = GOEI_STYLES;
@@ -237,51 +249,40 @@ export function createMultiControl({ type = 'text', label, values, events = {}, 
 
 
 
-// ===================================================================================
-// Export the style injection function for manual use if needed
-export { injectStyles };
 
 // ===================================================================================
 // creates a simple container that can hold multiple controls.
 // this can be nestered to create a hierarchy of controls
 export function createContainer({ indent = 0, events = {} }) {
     const container = newDiv('control-container');
-    
-    // Apply vertical layout and indentation
-    container.style.display = 'flex';
-    container.style.flexDirection = 'column';
-    container.style.gap = '0px';  // No gap between controls for tight layout
-    container.style.width = '100%'; // Ensure container takes full width
-    container.style.boxSizing = 'border-box'; // Include padding in width calculation
-    
+    // Add indentation class if needed
     if (indent > 0) {
-        // Use padding instead of margin to keep controls within container bounds
-        container.style.paddingLeft = (indent * 20) + 'px';
+        container.classList.add(`indent-${indent}`);
     }
-    
     // Add event listeners if provided
     addEvent(container, events);
-    
     // Add utility methods
     addProps(container, {
         remove: () => remove(container),
-        
         // Add a child control
         addControl: (control) => {
-            // Controls will automatically fit within the container's content area
             control.style.width = '100%';
             control.style.boxSizing = 'border-box';
             appendC(container, control);
             return container;
         },
-        
         // Set indentation level
         setIndent: (level) => {
-            container.style.paddingLeft = (level * 20) + 'px';
+            // Remove previous indent classes
+            for (let i = 1; i <= 10; i++) {
+                container.classList.remove(`indent-${i}`);
+            }
+            if (level > 0) {
+                container.classList.add(`indent-${level}`);
+            }
             return container;
         }
     });
-    
     return container;
 }
 
@@ -290,13 +291,13 @@ export function createContainer({ indent = 0, events = {} }) {
 export function addCustomStyles(customCSS) {
     const customStyleId = 'goei-custom-styles';
     let customStyle = document.getElementById(customStyleId);
-    
+
     if (!customStyle) {
         customStyle = document.createElement('style');
         customStyle.id = customStyleId;
         document.head.appendChild(customStyle);
     }
-    
+
     customStyle.textContent += '\n' + customCSS;
 }
 
