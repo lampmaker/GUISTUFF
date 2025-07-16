@@ -31,15 +31,17 @@ let newContainer = (events, props) => {
 }
 
 //===================================================================================
-// creates a new label with a text content
-let newLabel = (labelname, labelEl = createE('label')) => (
-    labelEl.textContent = labelname,
-    labelEl
+// creates a new text element with text content (not a form label)
+let newText = (textContent, textEl = createE('span')) => (
+    textEl.textContent = textContent,
+    textEl.className = 'control-text',    
+    textEl
 )
 //===================================================================================
 // creates a new input element with type and value, and an onChange event handler
 let newInput = (type, value, onChange = _ => { }, inputEl = createE('input')) => (
     inputEl.type = type, inputEl.value = value,
+    inputEl.autocomplete = "off",
     addEvent(inputEl, { input: (e) => onChange(e) }),
     inputEl
 )
@@ -47,7 +49,8 @@ let newInput = (type, value, onChange = _ => { }, inputEl = createE('input')) =>
 //===================================================================================
 // creates a new button element with text content and an onClick event handler
 let newSlider = (min, max, value, onChange = _ => { }, sliderEl = createE('input')) => (
-    sliderEl.type = 'range', sliderEl.min = min, sliderEl.max = max, sliderEl.value = value,
+    sliderEl.type = 'range', sliderEl.min = min, sliderEl.max = max, sliderEl.value = value,    
+    sliderEl.autocomplete = "off",
     addEvent(sliderEl, { input: (e) => onChange(e) }),
     sliderEl
 )
@@ -72,6 +75,7 @@ export function createSliderControl({ label, value, min = 0, max = 100, events =
         value = parseFloat(e.target.value);
         events.onChange?.(value);
     });
+    
     const container = newContainer(events, {
         updateValue: (newValue) => {
             value = newValue;
@@ -79,7 +83,7 @@ export function createSliderControl({ label, value, min = 0, max = 100, events =
         },
         get value() { return value; }       
     });
-    appendC(container, newLabel(label), sliderElement);
+    appendC(container, newText(label), sliderElement);
     return container;
 }
 
@@ -96,6 +100,7 @@ export function createMultiControl({ label, values, events = {}, valueEvents = {
             values[i] = e.target.value;
             events.onChange?.([...values]);
         });
+                
         addEvent(inputEl, valueEvents)
         inputs.push(inputEl);
         appendC(inputsContainer, inputEl);
@@ -110,7 +115,7 @@ export function createMultiControl({ label, values, events = {}, valueEvents = {
         get values() { return [...values]; }       
 
     })                              // add the methods to the element
-    appendC(container, newLabel(label), inputsContainer);
+    appendC(container, newText(label), inputsContainer);
     return container;
 }
 
