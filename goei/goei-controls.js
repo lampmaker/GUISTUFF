@@ -32,46 +32,37 @@ let newContainer = (events, props) => {
 
 //===================================================================================
 // creates a new text element with text content (not a form label)
-let newText = (textContent, textEl = createE('span')) => (
+let newText = (textContent, events = {}, textEl = createE('span')) => (
     textEl.textContent = textContent,
-    textEl.className = 'control-text',    
+    textEl.className = 'control-text',
+    addEvent(textEl, events),
     textEl
 )
 //===================================================================================
 // creates a new input element with type and value, and an onChange event handler
-let newInput = (type, value, onChange = _ => { }, inputEl = createE('input')) => (
+let newInput = (type, value, events = {}, inputEl = createE('input')) => (
     inputEl.type = type, inputEl.value = value,
     inputEl.autocomplete = "off",
-    addEvent(inputEl, { input: (e) => onChange(e) }),
+    addEvent(inputEl, events),
     inputEl
 )
 
 //===================================================================================
 // creates a new button element with text content and an onClick event handler
-let newSlider = (min, max, value, onChange = _ => { }, sliderEl = createE('input')) => (
-    sliderEl.type = 'range', sliderEl.min = min, sliderEl.max = max, sliderEl.value = value,    
+let newSlider = ({ min = 0, max = 1, step = 0.01, value }, events = {}, sliderEl = createE('input')) => (
+    sliderEl.type = 'range', sliderEl.min = min, sliderEl.max = max, sliderEl.value = value, sliderEl.step = step,
     sliderEl.autocomplete = "off",
-    addEvent(sliderEl, { input: (e) => onChange(e) }),
+    addEvent(sliderEl, events),
     sliderEl
 )
-
-
-
-
-
-
-
-
-
-
 
 
 //===================================================================================
 // creates a simple slider control with label
 //
 //
-export function createSliderControl({ label, value, min = 0, max = 100, events = {} }) {
-    const sliderElement = newSlider(min, max, value, (e) => {
+export function createSliderControl({ label, value, min = 0, max = 1, step = 0.01, events = {} }) {
+    const sliderElement = newSlider({ min, max, step, value }, (e) => {
         value = parseFloat(e.target.value);
         events.onChange?.(value);
     });
@@ -91,12 +82,12 @@ export function createSliderControl({ label, value, min = 0, max = 100, events =
 // creates a very simple textcontrol with label
 // common events can be added to the control as a whole.
 // valueEvents are attached to the individual inputs
-export function createMultiControl({ label, values, events = {}, valueEvents = {} }) {
+export function createMultiControl({ type='text',label, values, events = {}, valueEvents = {} }) {
     const inputsContainer = newDiv('inputs');
     values = [...values].flat()                             // if values is not an array, convert it to one
     const inputs = [];
     values.forEach((val, i) => {
-        const inputEl = newInput('text', val, (e) => {
+        const inputEl = newInput(type, val, (e) => {
             values[i] = e.target.value;
             events.onChange?.([...values]);
         });
