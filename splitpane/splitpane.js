@@ -126,9 +126,12 @@ export class SplitPane {
         
         this.container = container;
         this.isHorizontal = options.orientation !== 'vertical';
-        this.splitRatio = options.splitRatio || 0.5;
         this.splitterSize = options.splitterSize || 8;
         this.minSize = options.minSize || 50;
+        
+        // Set initial split ratio, ensuring it respects minSize constraints
+        this.splitRatio = options.splitRatio || 0.5;
+        this.validateSplitRatio();
         
         this.isDragging = false;
         this.startPos = 0;
@@ -152,6 +155,16 @@ export class SplitPane {
             } else {
                 this.setPanel(2, options.panel2);
             }
+        }
+    }
+    
+    validateSplitRatio() {
+        // Ensure split ratio respects minSize constraints based on current container size
+        const containerSize = this.isHorizontal ? this.container.clientWidth : this.container.clientHeight;
+        if (containerSize > 0) {
+            const minRatio = this.minSize / (containerSize - this.splitterSize);
+            const maxRatio = 1 - minRatio;
+            this.splitRatio = Math.max(minRatio, Math.min(maxRatio, this.splitRatio));
         }
     }
     
@@ -179,6 +192,9 @@ export class SplitPane {
         this.splitter.addEventListener('mousedown', e => this.startDrag(e));
         document.addEventListener('mousemove', e => this.drag(e));
         document.addEventListener('mouseup', () => this.endDrag());
+        
+        // Validate split ratio now that element has dimensions
+        this.validateSplitRatio();
         
         // Initial layout
         this.updateLayout();
@@ -253,6 +269,12 @@ export class SplitPane {
         const h = this.element.clientHeight;
         const s = this.splitterSize;
         
+        // Apply minSize constraints to the current split ratio
+        const containerSize = this.isHorizontal ? w : h;
+        const minRatio = this.minSize / (containerSize - s);
+        const maxRatio = 1 - minRatio;
+        this.splitRatio = Math.max(minRatio, Math.min(maxRatio, this.splitRatio));
+        
         if (this.isHorizontal) {
             const leftW = Math.floor((w - s) * this.splitRatio);
             const rightW = w - leftW - s;
@@ -315,7 +337,11 @@ export class SplitPane {
         return contentArea;
     }
     
-    setSplit(ratio) { this.splitRatio = ratio; this.updateLayout(); }
+    setSplit(ratio) { 
+        this.splitRatio = ratio; 
+        this.validateSplitRatio();
+        this.updateLayout(); 
+    }
     setOrientation(horizontal) { this.isHorizontal = horizontal; this.init(); }
     destroy() { this.element.remove(); }
 }

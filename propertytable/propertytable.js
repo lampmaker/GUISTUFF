@@ -290,7 +290,7 @@ class PropertyTable extends Pane {
     // Shared folder creation logic used by both class and instance addFolder methods
     _createEnhancedFolder(originalAddFolder, params, context) {
         const folder = originalAddFolder.call(context, params);
-         console.log("add folder", params);
+//         console.log("add folder", params);
         this._enhanceFolderWithBindings(folder);
         if (params?.object) folder.bindControls(params.object, params.options || {},params?.onChange);
 
