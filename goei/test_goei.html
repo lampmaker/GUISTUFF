@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Tests</title>
+    <style>
+        /* Page layout styles - kept separate from control styles */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+        }
+        
+        #main-container {
+            height: 100vh;
+        }
+        
+        .left-content {
+            padding: 20px;
+            height: 100%;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        
+        .right-content {
+            padding: 20px;
+            height: 100%;
+            box-sizing: border-box;
+            overflow: auto;
+        }
+        
+        .output {
+            background: #e8f4f8;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 0;
+            font-family: monospace;
+            white-space: pre-line;
+            height: 300px;
+            overflow-y: auto;
+        }
+        
+        h1 {
+            color: #333;
+        }
+        
+        .test-section {
+            margin: 15px 0;
+        }
+        
+        /* Control styles are now handled by goei-controls.js */
+    </style>
+</head>
+<body>
+    <div id="main-container"></div>
+    
+    <script type="module">
+        import { createMultiControl, createSliderControl, createTextControl, createContainer, createButtonControl } from './goei-controls.js';
+        import { SplitPane } from '../splitpane/splitpane.js';
+        
+        // Create split pane
+        const mainContainer = document.getElementById('main-container');
+        const split = new SplitPane(mainContainer, {
+            orientation: 'horizontal',
+            splitRatio: 0.3,
+            minSize: 200,
+            panel1: { title: 'Controls Menu' },
+            panel2: { title: 'Output' }
+        });
+        
+        // Get content areas
+        const leftPanel = split.getPanel(1);
+        const rightPanel = split.getPanel(2);
+        
+        // Create left panel content
+        const leftContent = document.createElement('div');
+        leftContent.className = 'left-content';
+        leftContent.innerHTML = `
+            <h1>Control Tests</h1>
+            <div class="test-section">
+                <h2>Multi Controls</h2>
+                <div id="multi-controls"></div>
+            </div>
+            <div class="test-section">
+                <h2>Slider Controls</h2>
+                <div id="slider-controls"></div>
+            </div>
+            <div class="test-section">
+                <h2>Nested Containers (Indentation Test)</h2>
+                <div id="nested-containers"></div>
+            </div>
+            <div class="test-section">
+                <h2>Button Controls</h2>
+                <div id="button-controls"></div>
+            </div>
+        `;
+        leftPanel.appendChild(leftContent);
+        
+        // Create right panel content
+        const rightContent = document.createElement('div');
+        rightContent.className = 'right-content';
+        rightContent.innerHTML = `
+            <h1>Output</h1>
+            <div class="output" id="output">Events will appear here...</div>
+        `;
+        rightPanel.appendChild(rightContent);
+        
+        const output = document.getElementById('output');
+        const log = (msg) => {
+            output.textContent = new Date().toLocaleTimeString() + ': ' + msg + '\n' + output.textContent;
+        };
+        
+        // Multi Controls
+        const multiContainer = document.getElementById('multi-controls');
+        // Container styling is now handled by goei-controls.js
+        
+        const positionControl = createMultiControl({
+            label: 'Position',
+            values: [10, 20, 30, 90],
+            events: {
+                onChange: (vals) => log(`Position changed: [${vals.join(', ')}]`),
+                click: (e) => log('Position container clicked')
+            },
+            valueEvents: {
+                focus: (e) => log('Position input focused'),
+                blur: (e) => log('Position input blurred')
+            }
+        });
+        
+        const nameControl = createMultiControl({
+            label: 'Name',         
+            values: ["Jonathan"],
+            events: {
+                onChange: (vals) => log(`Name changed: ${vals.join(' ')}`)
+            }
+        });
+
+        const colorControl = createMultiControl({
+            label: 'RGB Color',
+            values: [255, 128, 64],
+            events: {
+                onChange: (vals) => log(`Color changed: rgb(${vals.join(', ')})`)
+            },
+            valueEvents: {
+                focus: (e) => log('Color input focused'),
+                blur: (e) => log('Color input blurred')
+            }
+        });
+        
+        const namePartsControl = createMultiControl({
+            label: 'Name Parts',
+            values: ['John', 'Doe'],
+            events: {
+                onChange: (vals) => log(`Name parts changed: ${vals.join(' ')}`)
+            }
+        });
+        
+        const fullWidthInputs = createMultiControl({
+            label: '',  // No label - full width
+            values: [1.5, 2.0, 3.14],
+            events: {
+                onChange: (vals) => log(`Full width values: [${vals.join(', ')}]`)
+            }
+        });
+        
+        multiContainer.appendChild(nameControl);
+        multiContainer.appendChild(positionControl);
+        multiContainer.appendChild(colorControl);
+        multiContainer.appendChild(namePartsControl);
+        multiContainer.appendChild(fullWidthInputs);
+        
+        // Apply control-container class for proper styling
+        multiContainer.className = 'control-container';
+        
+        // Slider Controls
+        const sliderContainer = document.getElementById('slider-controls');
+        
+
+        const textControl=createTextControl({text:"This is a test, text only control thingy"})
+
+        const opacitySlider = createSliderControl({
+            label: 'Transparency',
+            value: 50.1,
+            min: 0,
+            max: 100,
+            events: {
+                onChange: (val) => log(`Opacity: ${val}%`)
+            }
+        });
+        
+        const volumeSlider = createSliderControl({
+            label: 'Volume',
+            value: 75,
+            min: 0,
+            max: 100,
+            events: {
+                onChange: (val) => log(`Volume: ${val}`)
+            }
+        });
+        
+        const temperatureSlider = createSliderControl({
+            label: 'Temperature',
+            value: 20,
+            min: -10,
+            max: 50,
+            events: {
+                onChange: (val) => log(`Temperature: ${val}°C`)
+            }
+        });
+        
+        const fullWidthSlider = createSliderControl({
+            label: '',  // No label - full width
+            value: 33,
+            min: 0,
+            max: 100,
+            events: {
+                onChange: (val) => log(`Full width slider: ${val}`)
+            }
+        });
+        
+        sliderContainer.appendChild(opacitySlider);
+        sliderContainer.appendChild(volumeSlider);
+        sliderContainer.appendChild(textControl);
+        sliderContainer.appendChild(temperatureSlider);
+        sliderContainer.appendChild(fullWidthSlider);
+        
+        // Apply control-container class for proper styling
+        sliderContainer.className = 'control-container';
+        
+        // Nested Containers Test
+        const nestedContainer = document.getElementById('nested-containers');
+        
+        // Create main container
+        const mainNestedContainer = createContainer({ indent: 0 });
+        
+        // Level 0 controls
+        const level0Control = createTextControl({ text: 'Level 0 - Full Width' });
+        mainNestedContainer.addControl(level0Control);
+        
+        // Level 1 container (indented)
+        const level1Container = createContainer({ indent: 1 });
+        const level1Control = createSliderControl({
+            label: 'Level 1',
+            value: 50,
+            events: { onChange: (val) => log(`Level 1 slider: ${val}`) }
+        });
+        level1Container.addControl(level1Control);
+        
+        // Level 2 container (more indented)
+        const level2Container = createContainer({ indent: 1 });
+        const level2Control = createMultiControl({
+            label: 'Level 2',
+            values: [1, 2, 3],
+            events: { onChange: (vals) => log(`Level 2 values: [${vals.join(', ')}]`) }
+        });
+        level2Container.addControl(level2Control);
+        
+        // Level 3 container (most indented)
+        const level3Container = createContainer({ indent: 1 });
+        const level3Control = createTextControl({ text: 'Level 3 - Should fit in narrow space' });
+        level3Container.addControl(level3Control);
+        
+        // Build the hierarchy
+        level2Container.addControl(level3Container);
+        level1Container.addControl(level2Container);
+        mainNestedContainer.addControl(level1Container);
+        
+        nestedContainer.appendChild(mainNestedContainer);
+       // nestedContainer.className = 'control-container';
+        
+        // Button Controls
+        const buttonContainer = document.getElementById('button-controls');
+        
+        const actionButtons = createButtonControl({
+            label: 'Actions',
+            buttons: [
+                { text: 'Save', onClick: () => log('Save button clicked!') },
+                { text: 'Load', onClick: () => log('Load button clicked!') },
+                { text: 'Delete', onClick: () => log('Delete button clicked!') }
+            ]
+        });
+        
+        const fileButtons = createButtonControl({
+            label: 'File Operations',
+            buttons: [
+                { text: 'New', onClick: () => log('New file created') },
+                { text: 'Open', onClick: () => log('File opened') }
+            ]
+        });
+        
+        const modeButtons = createButtonControl({
+            label: '',  // No label for full width
+            buttons: [
+                { text: 'Edit Mode', onClick: () => log('Switched to Edit Mode') },
+                { text: 'View Mode', onClick: () => log('Switched to View Mode') },
+                { text: 'Debug Mode', onClick: () => log('Switched to Debug Mode') }
+            ]
+        });
+        
+        buttonContainer.appendChild(actionButtons);
+        buttonContainer.appendChild(fileButtons);
+        buttonContainer.appendChild(modeButtons);
+        buttonContainer.className = 'control-container';
+        
+        // Test update methods after 3 seconds
+        setTimeout(() => {
+            log('--- Testing update methods ---');
+            positionControl.updateValues([100, 200, 300]);
+            opacitySlider.updateValue(25);
+            fullWidthInputs.updateValues([99.9, 88.8, 77.7]);
+            fullWidthSlider.updateValue(75);
+            log('Controls updated programmatically');
+        }, 3000);
+        
+        log('Test page loaded - try interacting with the controls!');
+    </script>
+</body>
+</html>
