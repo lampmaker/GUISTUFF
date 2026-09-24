@@ -16,11 +16,27 @@ new TreeView(options)
 - **nodeRenderer**: Optional function `(node, path, state) => HTMLElement` used to render custom node content.
 - **toggleDefinitions**: Map of toggle property definitions.
 - **toggleOrder**: Ordered list of toggles for the default renderer.
-- **nodeTypes**: Map describing node types and allowed children.
+- **nodeTypes**: Map describing node types. Per type:
+  - `allowedChildren` — the types that may be **dropped** into it, and, unless `addMenu` is
+    given, what its `+` offers (flat, "Add <type>").
+  - `addMenu` (optional) — what the `+` offers, when that should differ from the drop rule. Each
+    entry is a type name, `{ type, label?, value? }`, or `{ label, items: [...] }` for a submenu,
+    which opens to the side on hover (or click). A node may override it with its own `addMenu`.
+    ```javascript
+    addMenu: [
+        'folder',
+        { label: 'Primitives', items: [
+            { label: 'Sphere', type: 'object', value: 'sphere' },
+            { label: 'Box',    type: 'object', value: 'box' },
+        ] },
+    ]
+    ```
 - **enableDragDrop**: Enable drag and drop reordering.
 - **onSelectionChange(paths, node)**: Callback when selection changes.
 - **onNodeExpand(path, expanded)**: Fired when a node is toggled.
 - **onToggleClick(...)**: Fired when property toggles are clicked.
+- **onNodeAdd(parent, newChild, action, childType, value)**: Fired after `+` added a child;
+  `value` is what the chosen `addMenu` entry carried (undefined for a plain type).
 - **onNodeDrop(source, target, action, dragged, targetNode)**: Fired during drag and drop operations.
 
 ## Methods
