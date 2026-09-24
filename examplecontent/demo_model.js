@@ -15,6 +15,17 @@ export const demoModel = {
             collapsed: icons.folder,
             default: icons.folder,
             allowedChildren: ['folder', 'file', 'component', 'layer', 'custom'],
+            // What + offers, grouped. Without addMenu the menu is allowedChildren, flat.
+            // A `value` travels to onNodeAdd, so two entries can create the same type differently.
+            addMenu: [
+                'folder',
+                { label: 'Files', items: [
+                    { label: 'Empty file', type: 'file' },
+                    { label: 'File from template', type: 'file', value: 'template' },
+                ] },
+                { label: 'Graphics', items: ['component', 'layer'] },
+                'custom',
+            ],
             defaultToggles: {
                 add: true,      // Folders can add children
                 visible: true,
@@ -193,8 +204,8 @@ export const demoCallbacks = {
         logEvent(`<span style="color:#4caf50;">Node:</span> ${expanded ? 'expanded' : 'collapsed'} → ${path}`);
     },
 
-    onNodeAdd: (node, newChild, action, childType, logEvent, updateJsonViewer) => {
-        logEvent(`<span style="color:#4caf50;">Node Added:</span> '${newChild.label}' (${childType}) to '${node.label}'`);
+    onNodeAdd: (node, newChild, action, childType, value, logEvent, updateJsonViewer) => {
+        logEvent(`<span style="color:#4caf50;">Node Added:</span> '${newChild.label}' (${childType}${value !== undefined ? ', ' + value : ''}) to '${node.label}'`);
         updateJsonViewer();
     },
         // Notify via callbac

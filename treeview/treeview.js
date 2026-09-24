@@ -458,26 +458,48 @@ export class TreeView {
      */
     _handleAddChildNode(node, path) {
         const nodeType = node.type || 'custom';
+        const typeDefinition = this.options.nodeTypes[nodeType];
         // Check if node has its own allowedChildren override, otherwise use node type default
-        const allowedChildren = node.allowedChildren || this.options.nodeTypes[nodeType]?.allowedChildren || [];
-        
-        if (allowedChildren.length === 0) {
+        const allowedChildren = node.allowedChildren || typeDefinition?.allowedChildren || [];
+        // What the + offers. `addMenu` when given -- it may group entries into submenus, label
+        // them, and offer several entries that create the same type -- otherwise allowedChildren,
+        // as before. allowedChildren stays the drop rule either way, so a type can be droppable
+        // here without cluttering the menu, and the menu can say more than a type name.
+        const entries = this._normalizeMenu(node.addMenu || typeDefinition?.addMenu || allowedChildren);
+
+        if (entries.length === 0) {
             console.warn(`No allowed child types for node '${node.label}' (type: ${nodeType})`);
             return;
         }
-        
-        if (allowedChildren.length === 1) {
-            this._addChildNode(node, allowedChildren[0]);
+
+        if (entries.length === 1 && !entries[0].items) {
+            this._addChildNode(node, entries[0].type, entries[0].value);
         } else {
-            this._showChildTypeMenu(node, allowedChildren, path);
+            this._showChildTypeMenu(node, entries, path);
         }
     }
 
     /**
-     * Add a child node of the specified type
+     * Menu entries in one shape. An entry is either
+     *   'type'                          -> "Add type", creates that type
+     *   { type, label?, value? }        -> creates `type`; `value` is passed to onNodeAdd
+     *   { label, items: [ ...entries ] } -> a submenu
      * @private
      */
-    _addChildNode(node, childType) {
+    _normalizeMenu(list) {
+        return (list || []).map(e => typeof e === 'string'
+            ? { label: `Add ${e}`, type: e }
+            : e.items
+                ? { label: e.label ?? '', items: this._normalizeMenu(e.items) }
+                : { label: e.label ?? `Add ${e.type}`, type: e.type, value: e.value });
+    }
+
+    /**
+     * Add a child node of the specified type
+     * @param value  whatever the chosen menu entry carried, passed on to onNodeAdd
+     * @private
+     */
+    _addChildNode(node, childType, value) {
         if (!node.children) {
             node.children = [];
         }
@@ -493,81 +515,103 @@ export class TreeView {
         node.children.push(newChild);
         node.expanded = true; // Expand parent to show new child
         this._render();
-        this.onNodeAdd(node, newChild, 'add_child', childType);
-        // Notify via callback
-       // if (this.onToggleClick) {
-      //      this.onToggleClick(null, 'add', null, null, newChild, 'add_child');
-       // }
+        this.onNodeAdd(node, newChild, 'add_child', childType, value);
     }
 
     /**
-     * Show context menu for child type selection
+     * Show the add menu for a node: one level, with any submenus opening to the side on hover
+     * (or on click, for touch).
      * @private
      */
-    _showChildTypeMenu(node, allowedChildren, path) {
+    _showChildTypeMenu(node, entries, path) {
         // Remove any existing menu
         this._removeChildTypeMenu();
-        
-        const menu = document.createElement('div');
-        menu.className = 'treeview-child-type-menu';
-        menu.style.cssText = `
-            position: absolute;
-            background: #2d2d2d;
-            color: #e0e0e0;
-            border: 1px solid #555;
-            border-radius: 4px;
-            padding: 4px;
-            z-index: 1000;
-            font-family: monospace;
-            font-size: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        `;
-        
-        allowedChildren.forEach(childType => {
-            const item = document.createElement('div');
-            item.textContent = `Add ${childType}`;
-            item.style.cssText = `
-                padding: 4px 8px;
-                cursor: pointer;
-                border-radius: 2px;
-            `;
-            item.onmouseenter = () => item.style.backgroundColor = '#404040';
-            item.onmouseleave = () => item.style.backgroundColor = '';
-            item.onclick = () => {
-                this._addChildNode(node, childType);
-                this._removeChildTypeMenu();
-            };
-            menu.appendChild(item);
-        });
-        
-        document.body.appendChild(menu);
-        this._currentMenu = menu;
-        
+        this._menus = [];
+
+        const root = this._buildMenu(node, entries, 0);
+
         // Position menu near the add button
         const nodeElement = this.nodeElements.get(path);
-        if (nodeElement) {
-            const addButton = nodeElement.querySelector('[data-property="add"]');
-            if (addButton) {
-                const rect = addButton.getBoundingClientRect();
-                menu.style.left = `${rect.left}px`;
-                menu.style.top = `${rect.bottom + 2}px`;
-            }
+        const addButton = nodeElement?.querySelector('[data-property="add"]');
+        if (addButton) {
+            const rect = addButton.getBoundingClientRect();
+            this._placeMenu(root, rect.left, rect.bottom + 2);
         }
-        
+
         // Close menu on outside click
         setTimeout(() => {
             document.addEventListener('click', this._closeMenuHandler = () => this._removeChildTypeMenu(), { once: true });
         }, 0);
     }
 
-    /**
-     * Remove child type menu
-     * @private
-     */
+    /** One level of the add menu, appended to the page. @private */
+    _buildMenu(node, entries, level) {
+        const menu = document.createElement('div');
+        menu.className = 'treeview-child-type-menu';
+        menu.style.cssText = `
+            position: fixed;
+            background: #2d2d2d;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 4px;
+            z-index: ${1000 + level};
+            font-family: monospace;
+            font-size: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            min-width: 120px;
+        `;
+
+        // opening a submenu closes any deeper one left open by a sibling
+        const closeDeeper = () => {
+            while (this._menus.length > level + 1) this._menus.pop().remove();
+        };
+
+        entries.forEach(entry => {
+            const item = document.createElement('div');
+            item.textContent = entry.items ? `${entry.label}  \u25B8` : entry.label;
+            item.style.cssText = `
+                padding: 4px 8px;
+                cursor: pointer;
+                border-radius: 2px;
+                white-space: nowrap;
+            `;
+            const open = () => {
+                closeDeeper();
+                if (!entry.items) return;
+                const sub = this._buildMenu(node, entry.items, level + 1);
+                const r = item.getBoundingClientRect();
+                this._placeMenu(sub, r.right + 2, r.top - 5, r.left - 2);
+            };
+            item.onmouseenter = () => { item.style.backgroundColor = '#404040'; open(); };
+            item.onmouseleave = () => item.style.backgroundColor = '';
+            item.onclick = e => {
+                if (entry.items) { e.stopPropagation(); open(); return; }   // keep the menu open
+                this._addChildNode(node, entry.type, entry.value);
+                this._removeChildTypeMenu();
+            };
+            menu.appendChild(item);
+        });
+
+        document.body.appendChild(menu);
+        this._menus.push(menu);
+        return menu;
+    }
+
+    /** Put a menu at (x, y), flipping to `altX` (its right edge there) or up if it would leave
+     *  the window. Measured after it is in the page, since its size comes from its entries. @private */
+    _placeMenu(menu, x, y, altX) {
+        const { width, height } = menu.getBoundingClientRect();
+        if (x + width > window.innerWidth && altX !== undefined) x = altX - width;
+        x = Math.max(0, Math.min(x, window.innerWidth - width));
+        y = Math.max(0, Math.min(y, window.innerHeight - height));
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+    }
+
     _removeChildTypeMenu() {
-        if (this._currentMenu && this._currentMenu.parentNode) {
-            this._currentMenu.parentNode.removeChild(this._currentMenu);
-        }
+        for (const m of this._menus || []) m.remove();
+        this._menus = [];
         this._currentMenu = null;
         if (this._closeMenuHandler) {
             document.removeEventListener('click', this._closeMenuHandler);
