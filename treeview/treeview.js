@@ -31,6 +31,10 @@ export class TreeView {
     static CONSTANTS = { ICONS, STYLES };
 
     constructor(options = {}) {
+        /* STYLES PER TREE: the defaults, each group overridden by options.styles -- { CONTAINER: {...},
+           NODE_SELECTED: {...}, ... } -- so a host can match its own look. They were one static set
+           applied inline, so a tree in a themed panel kept its own grey whatever the page around it did. */
+        this.styles = Object.fromEntries(Object.entries(STYLES).map(([k, v]) => [k, { ...v, ...(options.styles?.[k] || {}) }]));
         this.options = {
             container: options.container || document.body,
             data: options.data || [],
@@ -70,7 +74,7 @@ export class TreeView {
     _createContainer() {
         this.container = document.createElement('div');
         this.container.className = 'treeview-container';
-        Object.assign(this.container.style, TreeView.CONSTANTS.STYLES.CONTAINER);
+        Object.assign(this.container.style, this.styles.CONTAINER);
         
         // Create and style the drop indicator
         this._createDropIndicator();
@@ -85,7 +89,7 @@ export class TreeView {
     _createDropIndicator() {
         this.dropIndicator = document.createElement('div');
         this.dropIndicator.className = 'treeview-drop-indicator';
-        Object.assign(this.dropIndicator.style, TreeView.CONSTANTS.STYLES.DROP_INDICATOR);
+        Object.assign(this.dropIndicator.style, this.styles.DROP_INDICATOR);
         document.body.appendChild(this.dropIndicator);
     }
 
@@ -104,7 +108,7 @@ export class TreeView {
             if (node.children && node.children.length > 0) {
                 const childrenContainer = document.createElement('div');
                 childrenContainer.className = 'treeview-children';
-                Object.assign(childrenContainer.style, TreeView.CONSTANTS.STYLES.CHILDREN);
+                Object.assign(childrenContainer.style, this.styles.CHILDREN);
                 
                 // Simple: just check the node's expanded property directly
                 const isExpanded = node.expanded === true;
@@ -120,7 +124,7 @@ export class TreeView {
         const nodeDiv = document.createElement('div');
         nodeDiv.className = 'treeview-node';
         nodeDiv.dataset.path = path;
-        Object.assign(nodeDiv.style, TreeView.CONSTANTS.STYLES.NODE);
+        Object.assign(nodeDiv.style, this.styles.NODE);
         
         // Apply node type styling
         const nodeType = node.type || 'custom';
@@ -130,7 +134,7 @@ export class TreeView {
         }
         
         const contentDiv = document.createElement('div');
-        Object.assign(contentDiv.style, TreeView.CONSTANTS.STYLES.NODE_CONTENT);
+        Object.assign(contentDiv.style, this.styles.NODE_CONTENT);
         
         // Apply node type content styling
         if (nodeTypeDefinition?.contentStyle) {
@@ -203,7 +207,7 @@ export class TreeView {
         
         nodeDiv.addEventListener('mouseenter', () => {
             if (!this.selectedNodes.has(path)) {
-                Object.assign(nodeDiv.style, TreeView.CONSTANTS.STYLES.NODE_HOVER);
+                Object.assign(nodeDiv.style, this.styles.NODE_HOVER);
             }
         });
         
@@ -215,7 +219,7 @@ export class TreeView {
         
         // Apply selection styling if selected
         if (this.selectedNodes.has(path)) {
-            Object.assign(nodeDiv.style, TreeView.CONSTANTS.STYLES.NODE_SELECTED);
+            Object.assign(nodeDiv.style, this.styles.NODE_SELECTED);
         }
         
         this.nodeElements.set(path, nodeDiv);
@@ -236,7 +240,7 @@ export class TreeView {
                 nodeElement.style.color = '';
             } else {
                 this.selectedNodes.add(path);
-                Object.assign(nodeElement.style, TreeView.CONSTANTS.STYLES.NODE_SELECTED);
+                Object.assign(nodeElement.style, this.styles.NODE_SELECTED);
             }
         } else {
             // Single selection
@@ -250,7 +254,7 @@ export class TreeView {
             
             this.selectedNodes.clear();
             this.selectedNodes.add(path);
-            Object.assign(nodeElement.style, TreeView.CONSTANTS.STYLES.NODE_SELECTED);
+            Object.assign(nodeElement.style, this.styles.NODE_SELECTED);
         }
         
         this.onSelectionChange(Array.from(this.selectedNodes), node);
@@ -355,7 +359,7 @@ export class TreeView {
             : `${toggleDefinition?.label || toggleKey}: ${value}`;
         
         toggle.addEventListener('mouseenter', () => {
-            toggle.style.backgroundColor = '#555';
+            Object.assign(toggle.style, this.styles.TOGGLE_HOVER);
         });
         
         toggle.addEventListener('mouseleave', () => {
@@ -550,17 +554,11 @@ export class TreeView {
         menu.className = 'treeview-child-type-menu';
         menu.style.cssText = `
             position: fixed;
-            background: #2d2d2d;
-            color: #e0e0e0;
-            border: 1px solid #555;
-            border-radius: 4px;
             padding: 4px;
             z-index: ${1000 + level};
-            font-family: monospace;
-            font-size: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
             min-width: 120px;
         `;
+        Object.assign(menu.style, this.styles.MENU);
 
         // opening a submenu closes any deeper one left open by a sibling
         const closeDeeper = () => {
@@ -583,7 +581,7 @@ export class TreeView {
                 const r = item.getBoundingClientRect();
                 this._placeMenu(sub, r.right + 2, r.top - 5, r.left - 2);
             };
-            item.onmouseenter = () => { item.style.backgroundColor = '#404040'; open(); };
+            item.onmouseenter = () => { Object.assign(item.style, this.styles.MENU_HOVER); open(); };
             item.onmouseleave = () => item.style.backgroundColor = '';
             item.onclick = e => {
                 if (entry.items) { e.stopPropagation(); open(); return; }   // keep the menu open
@@ -850,7 +848,7 @@ export class TreeView {
             this.selectedNodes.add(path);
             const element = this.nodeElements.get(path);
             if (element) {
-                Object.assign(element.style, TreeView.CONSTANTS.STYLES.NODE_SELECTED);
+                Object.assign(element.style, this.styles.NODE_SELECTED);
             }
         });
     }

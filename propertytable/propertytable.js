@@ -129,7 +129,12 @@ class PropertyTable extends Pane {
             case "number": {
                 options.showSlider = true;
                 const value = target[property];
-                if (!options.min && !options.max) {
+                /* NO RANGE GIVEN: a default one, widened to hold the value. "Given" is not "truthy":
+                   `!options.min` took a caller's min: 0 for no range at all, and gave its field a
+                   maximum of max(value at the time, 100) -- a light's flux in RAYTRACER_WEBGPU could
+                   not be raised past whatever it had been when the panel was drawn, a different
+                   ceiling in every scene. A min alone means a field unbounded above, as Tweakpane has it. */
+                if (options.min == null && options.max == null) {
                     const { NUMBER_MIN, NUMBER_MAX } = PropertyTable.CONSTANTS.DEFAULT_VALUES;
                     options.min = Math.min(value, options.min ?? NUMBER_MIN);
                     options.max = Math.max(value, options.max ?? NUMBER_MAX);

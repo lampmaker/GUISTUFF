@@ -46,6 +46,13 @@ export const STYLES = {
     CHILDREN: {
         marginLeft: '16px',
     },
+    // the add-child menu, and a node's toggle while hovered
+    MENU: {
+        background: '#2d2d2d', color: '#e0e0e0', border: '1px solid #555', borderRadius: '4px',
+        fontFamily: 'monospace', fontSize: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+    },
+    MENU_HOVER: { backgroundColor: '#404040' },
+    TOGGLE_HOVER: { backgroundColor: '#555' },
     DROP_INDICATOR: {
         position: 'absolute',
         height: '4px',

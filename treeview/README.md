@@ -31,6 +31,9 @@ new TreeView(options)
         ] },
     ]
     ```
+- **styles** (optional): the look, per group of `constants.js` STYLES -- `CONTAINER`, `NODE`,
+  `NODE_HOVER`, `NODE_SELECTED`, `MENU`, `MENU_HOVER`, `TOGGLE_HOVER`, ... Each given group is merged
+  over the default one, so `{ CONTAINER: { backgroundColor: 'transparent' } }` changes that alone.
 - **enableDragDrop**: Enable drag and drop reordering.
 - **onSelectionChange(paths, node)**: Callback when selection changes.
 - **onNodeExpand(path, expanded)**: Fired when a node is toggled.
