@@ -35,6 +35,9 @@ new TreeView(options)
   `NODE_HOVER`, `NODE_SELECTED`, `MENU`, `MENU_HOVER`, `TOGGLE_HOVER`, ... Each given group is merged
   over the default one, so `{ CONTAINER: { backgroundColor: 'transparent' } }` changes that alone.
 - **enableDragDrop**: Enable drag and drop reordering.
+- **toggleOnClick** (default true): a click anywhere on a row with children folds or unfolds it. False:
+  only its chevron does, and a click on the chevron leaves the selection alone; a click elsewhere on the
+  row selects it and nothing more -- for a tree whose rows are clicked to edit them.
 - **onSelectionChange(paths, node)**: Callback when selection changes.
 - **onNodeExpand(path, expanded)**: Fired when a node is toggled.
 - **onToggleClick(...)**: Fired when property toggles are clicked.

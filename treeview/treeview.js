@@ -45,6 +45,10 @@ export class TreeView {
             toggleOrder: options.toggleOrder || [],
             nodeTypes: options.nodeTypes || {},
             enableDragDrop: options.enableDragDrop !== false, // Enable by default
+            /* A CLICK ON A ROW WITH CHILDREN FOLDS IT (the default, as it always did) -- or, false, only a click on
+               its chevron does, and a click elsewhere on the row selects it and nothing more: a tree whose rows are
+               clicked to edit their properties folded a group each time one was picked (the user, 2026-10-05) */
+            toggleOnClick: options.toggleOnClick !== false,
             ...options
         };
 
@@ -172,7 +176,7 @@ export class TreeView {
         // Event listeners
         nodeDiv.addEventListener('click', (e) => {
             e.stopPropagation();
-            this._handleNodeClick(node, path, nodeDiv);
+            this._handleNodeClick(node, path, nodeDiv, e);
         });
         
         // Add drag and drop event listeners if enabled
@@ -226,14 +230,18 @@ export class TreeView {
         return nodeDiv;
     }
 
-    _handleNodeClick(node, path, nodeElement) {
-        // Handle expansion/collapse
-        if (node.children && node.children.length > 0) {
+    _handleNodeClick(node, path, nodeElement, e) {
+        // Handle expansion/collapse: anywhere on the row, or on its chevron alone (options.toggleOnClick)
+        const folds = !!(node.children && node.children.length > 0);
+        const chevron = folds && !!e?.target?.closest?.('.treeview-expand-icon');
+        if (folds && (this.options.toggleOnClick || chevron)) {
             this._toggleNode(path);
         }
+        // the chevron alone folds, so it is not a pick: what is selected stays selected
+        if (chevron && !this.options.toggleOnClick) return;
         
         // Handle selection
-        if (this.options.multiSelect && event.ctrlKey) {
+        if (this.options.multiSelect && (e ?? window.event)?.ctrlKey) {
             if (this.selectedNodes.has(path)) {
                 this.selectedNodes.delete(path);
                 nodeElement.style.backgroundColor = '';
