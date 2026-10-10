@@ -21,7 +21,7 @@ const HIGHLIGHTER_CONFIG = {
     SUPPORTED_STYLES: [
         'whiteSpace', 'wordWrap', 'overflowWrap', 'wordBreak',
         'fontFamily', 'fontSize', 'fontWeight', 'lineHeight',
-        'letterSpacing', 'textAlign'
+        'letterSpacing', 'textAlign', 'tabSize'
     ],
     WORD_WRAP_STYLES: {
         enabled: {
@@ -155,18 +155,24 @@ class TextareaHighlighter {
         });
     }
 
+    /* The overlay must lay its text out in exactly the box the textarea does, or a wrapped
+       line breaks at a different character in each and the caret (the textarea's) lands
+       somewhere other than the text you are reading (the overlay's). It used to sit 30px
+       to the right at the textarea's full width, so it wrapped 30px plus a scrollbar later
+       than the textarea did. Now it sits on the textarea with the same padding, and
+       _syncOverlay gives it the textarea's clientWidth, which excludes the scrollbar. */
     _setupOverlayStyles() {
-        const leftOffset = this.options.lineNumbers ? HIGHLIGHTER_CONFIG.LINE_NUMBERS.WIDTH : '0';
         const basePadding = '4px'; // Match textarea padding
         Object.assign(this.overlay.style, {
             position: 'absolute',
             top: '0', 
-            left: leftOffset,
-            width: this.options.lineNumbers ? `calc(100% - ${HIGHLIGHTER_CONFIG.LINE_NUMBERS.WIDTH})` : '100%',
+            left: '0',
+            width: '100%',
             height: '100%',
             pointerEvents: 'none',
             padding: basePadding,
-            paddingLeft: this.options.lineNumbers ? basePadding : basePadding,
+            paddingLeft: this.options.lineNumbers ?
+                `calc(${HIGHLIGHTER_CONFIG.LINE_NUMBERS.WIDTH} + ${basePadding})` : basePadding,
             margin: '0', 
             border: 'none',
             color: 'var(--in-fg)',
@@ -271,17 +277,44 @@ class TextareaHighlighter {
         clearTimeout(this.highlightTimeout);
         this.highlightTimeout = setTimeout(() => {
             if (!this.isDestroyed && this.overlay) {
-                this.overlay.innerHTML = this.highlighter.highlight(this.textarea.value);
+                this._syncOverlay();
+                this.overlay.innerHTML = this._highlightLines(this.textarea.value);
                 this._updateLineNumbers();
+                this._syncOverlay();
             }
         }, HIGHLIGHTER_CONFIG.DEBOUNCE_DELAY);
     }
 
+    /* One block per source line, so the gutter can ask each how tall it wrapped to. The
+       highlighter works on the whole text (a block comment spans lines), so its HTML is cut
+       at the newlines afterwards, closing and reopening any span that crosses one. */
+    _highlightLines(code) {
+        const html = this.highlighter.highlight(code);
+        const out = [];
+        let line = '', open = [];
+        for (const part of html.split(/(<span[^>]*>|<\/span>|\n)/)) {
+            if (part === '\n') {
+                out.push(line + '</span>'.repeat(open.length));
+                line = open.join('');
+            } else {
+                if (part.startsWith('<span')) open.push(part);
+                else if (part === '</span>') open.pop();
+                line += part;
+            }
+        }
+        out.push(line);
+        // an empty line has no height as a div; a <br> gives it one, as the textarea does
+        return out.map(l => `<div>${l.replace(/<[^>]*>/g, '') ? l : l + '<br>'}</div>`).join('');
+    }
+
+    /* A number per source line, each as tall as that line wrapped to in the overlay --
+       one number per visual row put every number after a wrapped line on the wrong row. */
     _updateLineNumbers() {
         if (this.isDestroyed || !this.lineNumbers) return;
         
-        const lines = this.textarea.value.split('\n');
-        this.lineNumbers.innerHTML = lines.map((_, i) => i + 1).join('<br>');
+        const rows = this.overlay.children;
+        this.lineNumbers.innerHTML = Array.from(rows, (row, i) =>
+            `<div style="height:${row.getBoundingClientRect().height}px">${i + 1}</div>`).join('');
     }
 
     _syncOverlay() {
@@ -295,9 +328,9 @@ class TextareaHighlighter {
             this.lineNumbers.scrollTop = this.textarea.scrollTop;
         }
         
-        const textareaRect = this.textarea.getBoundingClientRect();
-        this.overlay.style.width = `${textareaRect.width}px`;
-        this.overlay.style.height = `${textareaRect.height}px`;
+        // clientWidth/Height leave out the textarea's scrollbars, which narrow its text too
+        this.overlay.style.width = `${this.textarea.clientWidth}px`;
+        this.overlay.style.height = `${this.textarea.clientHeight}px`;
     }
 
     _initialUpdate() {

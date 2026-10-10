@@ -160,7 +160,7 @@ class PropertyTable extends Pane {
 
     //========================================================================================================================================  
     // Modifies controls after they are added to the pane
-    bindingModifier(binding, target, property, options) {
+    bindingModifier(binding, target, property, options, { sliders = true } = {}) {
         const type = detectBindingType(target, property);
         
         switch (type) {
@@ -184,6 +184,25 @@ class PropertyTable extends Pane {
                                 ticker?.dispose?.();
                                 textarea.addEventListener('input', (e) => target[property] = e.target.value);
                                 binding.update = () => setTextareaStyle(textarea, options);
+                                /* A REFRESH MUST NOT MOVE THE CARET. The box is a monitor made editable, and every
+                                   refresh (a host refreshing its tables whenever its settings change -- the camera,
+                                   any live value) writes its text through textContent (tweakpane MultiLogView
+                                   update_). Until a key is typed the textarea's value follows that text, and the caret
+                                   went back to the start: the cursor could be put in the box but not kept there (a
+                                   path's points in RAYTRACER_WEBGPU, 2026-10-02). The same text now writes nothing;
+                                   other text becomes the value, the caret kept where it was while the box has focus. */
+                                const nodeText = Object.getOwnPropertyDescriptor(Node.prototype, 'textContent');
+                                Object.defineProperty(textarea, 'textContent', {
+                                    configurable: true,
+                                    get() { return nodeText.get.call(this); },
+                                    set(text) {
+                                        if (text === this.value) return;
+                                        const focused = this.ownerDocument.activeElement === this;
+                                        const start = this.selectionStart, end = this.selectionEnd;
+                                        this.value = text;
+                                        if (focused) this.setSelectionRange(Math.min(start, text.length), Math.min(end, text.length));
+                                    },
+                                });
                             }
                         } catch (error) {
                             console.warn('Failed to modify textarea binding:', error);
@@ -194,6 +213,7 @@ class PropertyTable extends Pane {
             }
             case "vec3":
             case "vec4": {
+                if (!sliders) break;
                 setTimeout(() => {
                     try {
                         const element = binding.element;
@@ -275,10 +295,14 @@ class PropertyTable extends Pane {
     //========================================================================================================================================
     // Common binding setup logic - used by both pane and folder addBinding methods
     _setupBinding(originalAddBinding, target, property, options) {
+        /* sliders: false -- a vector as its numbers only, without the + that opens a slider per component
+           (a camera's position: "no sliders, just value"). Taken off before Tweakpane sees the options. */
+        const sliders = options?.sliders !== false;
+        if (options && 'sliders' in options) { options = { ...options }; delete options.sliders; }
         ({ target, property, options } = this.bindingPrepper(target, property, options));
         const binding = originalAddBinding(target, property, options);
         addContextMenu(binding, target, property, options);
-        this.bindingModifier(binding, target, property, options);
+        this.bindingModifier(binding, target, property, options, { sliders });
         return binding;
     }
 
