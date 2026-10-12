@@ -140,6 +140,19 @@ class PropertyTable extends Pane {
                     options.max = Math.max(value, options.max ?? NUMBER_MAX);
                     options.showSlider = false; // default to showing the slider
                 }
+                /* A RANGE GIVEN, AND A VALUE OUTSIDE IT: the range widened to hold the value. A range is
+                   the slider's reach, not a limit on the value -- a range shared by many values (a shape
+                   type's width, 0.01 to 10) met one of 60, drew its slider pinned at the end, and the
+                   first drag wrote 10 over the 60 (ShadyTracer's RGBW example, 2026-10-12). Only a bound
+                   given is moved; a min alone stays a field unbounded above. Widened on a copy: an options
+                   object a caller hands every row of a kind would otherwise carry one row's value into
+                   the next row's range. */
+                else if (typeof value === "number" && Number.isFinite(value)
+                         && ((options.min != null && value < options.min) || (options.max != null && value > options.max))) {
+                    options = { ...options };
+                    if (options.min != null && value < options.min) options.min = value;
+                    if (options.max != null && value > options.max) options.max = value;
+                }
                 break;
             }
             case "string": {
