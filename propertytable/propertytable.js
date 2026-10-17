@@ -50,8 +50,73 @@ class PropertyTable extends Pane {
         }
     };
 
+    /* BOXES: a folder drawn as a box of its own -- a border, rounded corners, its own ground, the title in the
+       input colour at 12.5px (an icon before it, if given), a folder inside it set in a little. One look for every
+       table that asks for it, so a change here changes them all: ShadyTracer had it as its host's rules over
+       Tweakpane's classes, copied once per panel that wanted boxes, and a third panel would have been a third copy.
+       The colours are custom properties a host sets (on the table or any ancestor); unset, each falls back to
+       Tweakpane's own theme, so a plain page gets boxes too.
+       NOT overflow: hidden. The rounded corner could have been clipped that way, but so would anything a row
+       opens below itself -- Tweakpane's colour picker is a popup positioned inside its row, and on a box's last
+       rows it was cut off at the border. The one thing that reached the corner is the fold's indent strip, and a
+       box has no use for it -- its border says what is inside -- so a box has none.
+       A folder in a box is set in by margins of the same specificity as Tweakpane's spacing between blades, so
+       Tweakpane's still decides its top (none after another folder); a box in a box keeps a box's margins. */
+    static BOX_CSS = `
+.tp-fldv.pt-box { margin: var(--pt-box-margin, 8px); border: 1px solid var(--pt-box-border-color, rgba(187, 188, 196, 0.25));
+    border-radius: var(--pt-box-border-radius, 7px); background: var(--pt-box-background-color, rgba(0, 0, 0, 0.15)); }
+.tp-fldv.pt-box > .tp-fldv_b { position: relative; height: auto; padding: 8px 10px 4px 12px; background: transparent;
+    color: var(--pt-box-title-color, var(--tp-input-foreground-color, hsl(230, 7%, 75%)));
+    font-family: inherit; font-size: var(--pt-box-title-font-size, 12.5px); font-weight: 600; line-height: normal;
+    text-transform: none; letter-spacing: 0; }
+.tp-fldv.pt-box > .tp-fldv_i { display: none; }
+.tp-fldv.pt-box > .tp-fldv_c { padding-bottom: 4px; }
+.tp-fldv.pt-box.pt-icon > .tp-fldv_b { padding-left: 33px; }
+.tp-fldv.pt-box.pt-icon > .tp-fldv_b::before { content: ''; position: absolute; left: 10px; top: 50%; width: 15px; height: 15px;
+    margin-top: -5.5px; background: currentColor;
+    -webkit-mask: var(--pt-icon) center / contain no-repeat; mask: var(--pt-icon) center / contain no-repeat; }
+.tp-fldv.pt-box .tp-fldv { margin: 2px 4px 2px 8px; }
+.tp-fldv.pt-box .tp-fldv.pt-box { margin: var(--pt-box-margin, 8px); }
+`;
+
+    /**
+     * @param options  Tweakpane's, and:
+     *   boxes  true: every folder added at the table's top level is a box (a folder's own `box` decides otherwise)
+     */
     constructor(options) {
         super(options);
+        this._boxes = options?.boxes === true;
+        // the rules once per document, as Tweakpane embeds its own -- so a window a panel is moved into, which
+        // copies the page's stylesheets, has them too
+        this.registerPlugin({ id: 'propertytable', css: PropertyTable.BOX_CSS, plugins: [] });
+    }
+
+    //========================================================================================================================================
+    /**
+     * A box's icon, drawn before its title in the title's colour: SVG markup (a string), an SVG element, or the URL
+     * of an image -- only its shape counts, as a mask. Nothing for a folder that is not a box. Static, so a host can
+     * give one to a folder it did not make itself; null takes it away.
+     */
+    static setIcon(folder, icon) {
+        const el = folder?.element;
+        if (!el?.classList?.contains('tp-fldv')) return folder;
+        if (icon == null || icon === '') {
+            el.classList.remove('pt-icon');
+            el.style.removeProperty('--pt-icon');
+            return folder;
+        }
+        let url;
+        const markup = typeof icon === 'string' ? (icon.trim().startsWith('<') ? icon : null) : icon?.outerHTML;
+        if (markup != null) {
+            // a data: URL's SVG needs its namespace, which markup taken from an inline <svg> leaves out
+            const svg = /^\s*<svg\b[^>]*\bxmlns=/.test(markup) ? markup : markup.replace(/<svg\b/, '<svg xmlns="http://www.w3.org/2000/svg"');
+            url = `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+        } else {
+            url = `url("${String(icon).replace(/["\\]/g, '\\$&')}")`;
+        }
+        el.classList.add('pt-icon');
+        el.style.setProperty('--pt-icon', url);
+        return folder;
     }
 
     //========================================================================================================================================
@@ -333,6 +398,9 @@ class PropertyTable extends Pane {
     _createEnhancedFolder(originalAddFolder, params, context) {
         const folder = originalAddFolder.call(context, params);
 //         console.log("add folder", params);
+        // a box: asked for (`box`), or a top-level folder of a table of boxes
+        if (params?.box ?? (context === this && this._boxes)) folder.element.classList.add('pt-box');
+        if (params?.icon != null) PropertyTable.setIcon(folder, params.icon);
         this._enhanceFolderWithBindings(folder);
         if (params?.object) folder.bindControls(params.object, params.options || {},params?.onChange);
 
